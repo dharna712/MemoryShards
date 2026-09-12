@@ -150,33 +150,26 @@
 
   /* ---------------- PANEL STACK ---------------- */
   /* The "pushed back" depth effect: each panel is position:sticky (pins
-     to the viewport), and as the NEXT panel's sticky turn arrives and
-     scrolls up over it, THIS panel shrinks + dims via a scroll-driven
-     animation using animation-range: exit — the animation runs on the
-     OUTGOING panel as it's covered, not on the incoming one. Stepped
-     `top` offsets (0, 6px, 12px, 18px) keep the browser's sticky/paint
-     ordering unambiguous. Verified pattern (CodeFronts "Scroll-Driven
-     Scaling Stack") — earlier attempts here animated the wrong element
-     (the incoming panel, on `entry`) and used negative margins instead
-     of stepped `top`, which is what actually caused the trouble. */
+     to the viewport, confirmed working via getComputedStyle — hero and
+     zip both correctly pin at their stepped top offsets simultaneously).
+     The shrink+dim of the outgoing panel is driven by a small JS scroll
+     handler (see bottom of file) rather than animation-timeline:view()'s
+     `exit` range: verified via direct DOM inspection that exit never
+     triggers on a full-viewport sticky element in this environment
+     (transform stayed at identity across 1500px of scroll) — a real,
+     reproducible incompatibility, not a rendering artifact. The JS
+     version computes each panel's recede amount directly from the next
+     panel's actual on-screen position, so there's nothing left to guess. */
   .panel {
     position: sticky; min-height: 100vh; display: flex; align-items: center;
-    animation: panel-recede linear both;
-    animation-timeline: view();
-    animation-range: exit;
+    will-change: transform, filter;
   }
   .panel-hero     { top: 0; }
   .panel-zip      { top: 6px; }
   .panel-pipeline { top: 12px; }
   .panel-timeline { top: 18px; }
-  @keyframes panel-recede {
-    to { transform: scale(0.94); filter: brightness(0.7); }
-  }
-  @supports not (animation-timeline: view()) {
-    .panel { animation: none; }
-  }
   @media (prefers-reduced-motion: reduce) {
-    .panel { animation: none !important; transform: none !important; }
+    .panel { transform: none !important; filter: none !important; }
   }
   .panel-face {
     width: 100%; min-height: 100vh; display: flex; align-items: center; background: var(--bg);
@@ -480,4 +473,38 @@
     btn.textContent = scattered ? 'Reconstruct' : 'Shatter again';
     hint.textContent = scattered ? 'click to piece it together' : 'click to scatter the fragments';
   });
+
+  // Depth-push panel stack: each panel shrinks + dims as the next one
+  // covers it, computed directly from the next panel's live position —
+  // no reliance on animation-timeline/exit, which doesn't fire on a
+  // full-viewport sticky element in testing.
+  (function () {
+    const panels = Array.from(document.querySelectorAll('.panel'));
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || panels.length < 2) return;
+
+    let ticking = false;
+    function update() {
+      const vh = window.innerHeight;
+      for (let i = 0; i < panels.length - 1; i++) {
+        const next = panels[i + 1];
+        const nextTop = next.getBoundingClientRect().top;
+        const progress = Math.min(1, Math.max(0, 1 - nextTop / vh));
+        const scale = 1 - progress * 0.08;
+        const brightness = 1 - progress * 0.32;
+        panels[i].style.transform = `scale(${scale})`;
+        panels[i].style.filter = `brightness(${brightness})`;
+      }
+      ticking = false;
+    }
+    function onScroll() {
+      if (!ticking) {
+        requestAnimationFrame(update);
+        ticking = true;
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  })();
 </script>

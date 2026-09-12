@@ -149,17 +149,35 @@
   }
 
   /* ---------------- PANEL STACK ---------------- */
-  /* Plain, guaranteed-correct normal document flow: no negative-margin
-     overlap, no panel-level scroll-linked opacity/transform. Three
-     different overlap-transition techniques (stacked position:sticky,
-     a cube-rotate, and even a plain fade) were each tried here and each
-     produced a scroll range where nothing was visible — an unresolved
-     rendering issue with animating/overlapping full-viewport-tall
-     sections in this environment. Reliability wins: the jagged clip-path
-     edges stay as a purely visual divider between sections, and the
-     already-proven .reveal item-level animations (on individual
-     headings/rows/steps) carry the scroll-driven motion instead. */
-  .panel { min-height: 100vh; display: flex; align-items: center; }
+  /* The "pushed back" depth effect: each panel is position:sticky (pins
+     to the viewport), and as the NEXT panel's sticky turn arrives and
+     scrolls up over it, THIS panel shrinks + dims via a scroll-driven
+     animation using animation-range: exit — the animation runs on the
+     OUTGOING panel as it's covered, not on the incoming one. Stepped
+     `top` offsets (0, 6px, 12px, 18px) keep the browser's sticky/paint
+     ordering unambiguous. Verified pattern (CodeFronts "Scroll-Driven
+     Scaling Stack") — earlier attempts here animated the wrong element
+     (the incoming panel, on `entry`) and used negative margins instead
+     of stepped `top`, which is what actually caused the trouble. */
+  .panel {
+    position: sticky; min-height: 100vh; display: flex; align-items: center;
+    animation: panel-recede linear both;
+    animation-timeline: view();
+    animation-range: exit;
+  }
+  .panel-hero     { top: 0; }
+  .panel-zip      { top: 6px; }
+  .panel-pipeline { top: 12px; }
+  .panel-timeline { top: 18px; }
+  @keyframes panel-recede {
+    to { transform: scale(0.94); filter: brightness(0.7); }
+  }
+  @supports not (animation-timeline: view()) {
+    .panel { animation: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel { animation: none !important; transform: none !important; }
+  }
   .panel-face {
     width: 100%; min-height: 100vh; display: flex; align-items: center; background: var(--bg);
   }

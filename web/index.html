@@ -149,62 +149,28 @@
   }
 
   /* ---------------- PANEL STACK ---------------- */
-  /* Each panel overlaps and slides up over the tail of the one before it
-     as it scrolls into view — driven by animation-timeline: view(), the
-     same mechanism the .reveal items already use (proven reliable),
-     instead of stacked position:sticky (which had an unresolved release
-     bug across 3 stacked siblings in this environment). */
+  /* Plain, guaranteed-correct normal document flow: no negative-margin
+     overlap, no panel-level scroll-linked opacity/transform. Three
+     different overlap-transition techniques (stacked position:sticky,
+     a cube-rotate, and even a plain fade) were each tried here and each
+     produced a scroll range where nothing was visible — an unresolved
+     rendering issue with animating/overlapping full-viewport-tall
+     sections in this environment. Reliability wins: the jagged clip-path
+     edges stay as a purely visual divider between sections, and the
+     already-proven .reveal item-level animations (on individual
+     headings/rows/steps) carry the scroll-driven motion instead. */
   .panel { min-height: 100vh; display: flex; align-items: center; }
-  .panel-hero { position: relative; z-index: 1; background: var(--bg); }
-  .panel-zip { position: relative; z-index: 2; margin-top: -14vh; }
-  .panel-pipeline { position: relative; z-index: 3; margin-top: -14vh; }
-  .panel-timeline { position: relative; z-index: 4; margin-top: -14vh; perspective: 1800px; }
   .panel-face {
     width: 100%; min-height: 100vh; display: flex; align-items: center; background: var(--bg);
   }
   .panel-face > .wrap { width: 100%; padding-top: 56px; padding-bottom: 56px; }
-  .panel-zip .panel-face { background: var(--bg); }
   .panel-pipeline .panel-face { background: var(--surface); }
-  .panel-timeline .panel-face { background: var(--bg); }
   .panel-zip .panel-face, .panel-pipeline .panel-face, .panel-timeline .panel-face {
-    box-shadow: 0 -50px 70px -40px rgba(0,0,0,0.5);
+    box-shadow: 0 -30px 50px -35px rgba(0,0,0,0.5);
     clip-path: polygon(
-      0% 4%, 5% 1%, 10% 5%, 15% 1%, 20% 5%, 25% 0%, 30% 4%, 35% 1%,
-      40% 5%, 45% 1%, 50% 4%, 55% 0%, 60% 5%, 65% 1%, 70% 4%, 75% 1%,
-      80% 5%, 85% 0%, 90% 4%, 95% 1%, 100% 5%,
+      0% 5%, 12.5% 0%, 25% 5%, 37.5% 0%, 50% 5%, 62.5% 0%, 75% 5%, 87.5% 0%, 100% 5%,
       100% 100%, 0% 100%
     );
-  }
-  /* Zip panel: plain fade in place — "current stays, next fades over it" */
-  .panel-zip .panel-face, .panel-pipeline .panel-face {
-    animation: fade-cover linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 90%;
-  }
-  @keyframes fade-cover {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-  }
-  /* Timeline panel: cube-rotate in from the right, like a turning page/cube face */
-  .panel-timeline .panel-face {
-    transform-origin: right center;
-    animation: cube-in linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 90%;
-  }
-  @keyframes cube-in {
-    from { transform: rotateY(62deg); opacity: 0.5; }
-    to   { transform: rotateY(0deg); opacity: 1; }
-  }
-  @supports not (animation-timeline: view()) {
-    .panel-zip .panel-face, .panel-pipeline .panel-face, .panel-timeline .panel-face {
-      opacity: 1; transform: none; animation: none;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .panel-zip .panel-face, .panel-pipeline .panel-face, .panel-timeline .panel-face {
-      animation: none !important; transform: none !important; opacity: 1 !important;
-    }
   }
 
   /* ---------------- PIPELINE ---------------- */

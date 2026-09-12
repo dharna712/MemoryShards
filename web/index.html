@@ -168,6 +168,11 @@
   .panel-zip      { top: 6px; }
   .panel-pipeline { top: 12px; }
   .panel-timeline { top: 18px; }
+  /* Content after the sticky stack (reel, footer) must be explicitly
+     positioned too, otherwise CSS stacking rules paint the sticky
+     panels above it regardless of scroll position or DOM order —
+     that's what caused the reel/timeline overlap. */
+  .above-stack { position: relative; z-index: 5; background: var(--bg); }
   @media (prefers-reduced-motion: reduce) {
     .panel { transform: none !important; filter: none !important; }
   }
@@ -436,7 +441,7 @@
   </section>
 </div></div></div>
 
-<div class="wrap">
+<div class="wrap above-stack">
   <section class="reel-section">
     <h2 class="reveal">Still turning over</h2>
     <p class="section-sub reveal">The same four fragments, no longer scattered — just frames in one reel now.</p>
@@ -452,7 +457,7 @@
   </section>
 </div>
 
-<div class="wrap">
+<div class="wrap above-stack">
   <footer>
     <div class="credits-label">Reference photo sources</div>
     <div class="source-chips">

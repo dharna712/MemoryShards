@@ -1,0 +1,8 @@
+chat.txt
+chat.md
+data/raw/
+*.pyc
+__pycache__/
+.ipynb_checkpoints/
+venv/
+.env

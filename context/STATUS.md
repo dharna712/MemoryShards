@@ -15,18 +15,6 @@ every commit that changes project direction or completes a milestone.
   training, own personal photos/chat export as qualitative test-time demo.
 - Not yet done: dataset sourced/downloaded, no code written, no model run.
 
-## Next Steps
-
-- [ ] Confirm and download training dataset (Wikimedia Commons "Category:Media
-      with GPS EXIF" proposed — no signup needed, ~2-3k images, <300MB).
-- [ ] EXIF extraction + reverse geocoding script.
-- [ ] Event clustering (DBSCAN on time+geo).
-- [ ] Captioning model integration (BLIP/CLIP).
-- [ ] Timeline fusion + rendering.
-- [ ] Run qualitative demo on own photos before Sept 14.
-- [ ] Demo UI: fragments-to-timeline morph (research done, see
-      `UI_RESEARCH.md` — native View Transitions API, not yet built).
-
 ## 2026-09-12 (later)
 
 - Researched demo UI approach: native View Transitions API for a
@@ -50,4 +38,28 @@ every commit that changes project direction or completes a milestone.
   Wikimedia Commons, properly licensed and credited).
   All content is illustrative/reference photos for the demo, NOT the
   training or personal test data — no pipeline code exists yet behind it.
-  Not committed to git yet.
+- Added scroll-driven section transitions (jagged-edge panels sliding
+  over each other) and a spinning 3D "memory reel" carousel of the 4
+  reference photos as a closing coda. Deployed live at
+  https://memoryshards.onrender.com (Render, auto-deploys off `main`).
+- Debugged and fixed a real bug: an initial 3-stacked-`position:sticky`
+  implementation of the panel transition had an unresolved browser
+  release bug (the last panel never unstuck, blocking the reel/footer
+  entirely). Replaced with `animation-timeline: view()`-driven overlap
+  instead — verified working end-to-end on the deployed site.
+- Deliberately skipped a further UI idea (torn-photo-then-zips-together
+  effect, logged in `UI ideas.txt` item 5) to stop layering more visual
+  effects — the UI is in good shape for a demo; the pipeline is not.
+
+## Next Steps — PRIORITY: pipeline has zero code as of now
+
+- [ ] Confirm and download training dataset (Wikimedia Commons "Category:Media
+      with GPS EXIF" proposed — no signup needed, ~2-3k images, <300MB).
+- [ ] EXIF extraction + reverse geocoding script.
+- [ ] Event clustering (DBSCAN on time+geo).
+- [ ] Captioning model integration (BLIP/CLIP).
+- [ ] Timeline fusion + rendering.
+- [ ] Run qualitative demo on own photos before Sept 14.
+
+UI/demo page is done for now (see above) — do not add more visual
+effects before the pipeline exists. Phase 1 eval is 2026-09-14.

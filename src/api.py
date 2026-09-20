@@ -1,0 +1,95 @@
+"""
+Backend for live UI integration: a small Flask API that wraps the
+already-tested pipeline (Extract -> Cluster -> Caption, from
+build_timeline.py) behind an HTTP endpoint the static site can call.
+
+This is new surface area the static site didn't have before — it's the
+piece that turns the site from "illustrative mockup" into "actually runs
+the pipeline on whatever photos you upload."
+
+Face recognition (Recognize) is not wired in here yet — see the note in
+build_timeline.py. Can be added once the Colab-trained checkpoint exists,
+without changing this endpoint's shape (just adds a 'people' field per
+event).
+
+Run locally:
+    python src/api.py
+Then POST photos (multipart, field name "photos") to
+    http://localhost:5000/api/timeline
+"""
+
+import base64
+import io
+import sys
+import tempfile
+from pathlib import Path
+
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from PIL import Image
+
+sys.stdout.reconfigure(encoding="utf-8")
+
+from build_timeline import build_timeline
+
+app = Flask(__name__)
+CORS(app)  # the frontend is served from a different Render service/domain
+
+THUMBNAIL_SIZE = (240, 240)
+
+
+def thumbnail_base64(photo_path):
+    img = Image.open(photo_path).convert("RGB")
+    img.thumbnail(THUMBNAIL_SIZE, Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=80)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def event_to_json(event):
+    return {
+        "start_time": event["start_time"].isoformat(),
+        "display_time": event["start_time"].strftime("%d %b, %I:%M %p"),
+        "place": event["place"],
+        "caption": event["caption"],
+        "photo_count": event["photo_count"],
+        "standalone": event["standalone"],
+        "thumbnail": thumbnail_base64(event["photos"][0]),
+    }
+
+
+@app.get("/api/health")
+def health():
+    return jsonify({"status": "ok"})
+
+
+@app.post("/api/timeline")
+def timeline():
+    files = request.files.getlist("photos")
+    if not files:
+        return jsonify({"error": "no photos uploaded (expected multipart field 'photos')"}), 400
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        for f in files:
+            if f.filename:
+                f.save(tmp_path / f.filename)
+
+        events = build_timeline(tmp_path, caption=True)
+
+        if not events:
+            return jsonify({
+                "events": [],
+                "message": "No usable photos — none had both a timestamp and GPS "
+                           "location in their EXIF data.",
+            })
+
+        return jsonify({"events": [event_to_json(e) for e in events]})
+
+
+if __name__ == "__main__":
+    # debug=True's file-watching reloader was falsely detecting changes in
+    # torch/stdlib files mid-request on this machine and restarting the
+    # server, killing in-flight requests — not needed for local testing,
+    # and production (gunicorn) doesn't use this reloader at all
+    app.run(debug=False, port=5000)

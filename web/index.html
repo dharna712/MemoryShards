@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>MemoryShards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -233,6 +234,18 @@
   .tl-label { font-size: 14.5px; }
   .tl-label .place { display: block; font-size: 11px; color: var(--crack); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
 
+  /* ---------------- LIVE DEMO (real pipeline, not illustrative) ---------------- */
+  .live-demo-section { padding: 56px 0; border-top: 1px dashed var(--border); }
+  .live-demo-section h2 { font-size: 22px; margin-bottom: 6px; }
+  .live-demo-section .section-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 26px; max-width: 64ch; }
+  .live-demo-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  input#photoInput {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-muted);
+    max-width: 100%;
+  }
+  .demo-status { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; min-height: 1.4em; }
+  .demo-status.error { color: #e3695f; }
+
   /* ---------------- MEMORY REEL ---------------- */
   .reel-section { padding: 64px 0 12px; text-align: center; }
   .reel-section h2 { font-size: 22px; margin-bottom: 6px; }
@@ -442,6 +455,19 @@
 </div></div></div>
 
 <div class="wrap above-stack">
+  <section class="live-demo-section">
+    <h2 class="reveal">Try it on your own photos</h2>
+    <p class="section-sub reveal">Unlike the example above, this one is real. Upload a few photos that still have their original location and timestamp data — most phone camera photos do — and the actual pipeline runs: EXIF extraction, reverse geocoding, event clustering, and captioning with a pretrained vision-language model.</p>
+    <div class="live-demo-controls">
+      <input type="file" id="photoInput" multiple accept="image/*" />
+      <button class="primary" id="btnRunDemo">Reconstruct my timeline</button>
+    </div>
+    <div class="demo-status mono" id="demoStatus"></div>
+    <div class="tl" id="demoResults"></div>
+  </section>
+</div>
+
+<div class="wrap above-stack">
   <section class="reel-section">
     <h2 class="reveal">Still turning over</h2>
     <p class="section-sub reveal">The same four fragments, no longer scattered — just frames in one reel now.</p>
@@ -511,5 +537,72 @@
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     update();
+  })();
+
+  // Live demo: calls the real backend pipeline (Extract -> Cluster ->
+  // Caption). Unlike the illustrative example above, this one runs on
+  // whatever photos the visitor uploads.
+  (function () {
+    const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+      ? 'http://localhost:5000'
+      : 'https://memoryshards-api.onrender.com';
+    const input = document.getElementById('photoInput');
+    const btn = document.getElementById('btnRunDemo');
+    const status = document.getElementById('demoStatus');
+    const results = document.getElementById('demoResults');
+
+    function setStatus(text, isError) {
+      status.textContent = text;
+      status.classList.toggle('error', !!isError);
+    }
+
+    function renderEvents(events) {
+      results.innerHTML = '';
+      events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      for (const e of events) {
+        const row = document.createElement('div');
+        row.className = 'tl-row';
+        const countSuffix = e.photo_count > 1 ? ` · ${e.photo_count} photos` : '';
+        row.innerHTML =
+          '<div class="tl-time">' + e.display_time + '</div>' +
+          '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')"></div>' +
+          '<div class="tl-label">' + (e.caption || '(no caption)') +
+          '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span></div>';
+        results.appendChild(row);
+      }
+    }
+
+    btn.addEventListener('click', async () => {
+      const files = input.files;
+      if (!files || !files.length) {
+        setStatus('Pick a few photos first.', true);
+        return;
+      }
+
+      const formData = new FormData();
+      for (const file of files) formData.append('photos', file);
+
+      results.innerHTML = '';
+      setStatus('Running the pipeline — this can take a minute, especially on the first request.');
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API_BASE + '/api/timeline', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus(data.error, true);
+        } else if (!data.events || !data.events.length) {
+          setStatus(data.message || 'No usable photos — none had both a timestamp and GPS location.', true);
+        } else {
+          setStatus('');
+          renderEvents(data.events);
+        }
+      } catch (err) {
+        setStatus('Could not reach the server. If this is the first request in a while, the free-tier backend may be waking up — try again in about 30 seconds.', true);
+      } finally {
+        btn.disabled = false;
+      }
+    });
   })();
 </script>

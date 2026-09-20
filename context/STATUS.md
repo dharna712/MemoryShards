@@ -266,11 +266,69 @@ ways since the real data alone can't prove both directions:
       the repo's `checkpoints/` folder (gitignored).
 - [ ] Day 8 — face clustering on personal photos, using the trained
       checkpoint.
-- [ ] Day 9 — captioning integration (BLIP/CLIP, inference only).
-- [ ] Day 10 — timeline fusion + rendering.
+- [x] Day 9 — captioning integration (BLIP/CLIP, inference only).
+- [x] Day 10 — timeline fusion + rendering.
+- [x] Live backend + UI integration (scope change, see below — not in the
+      original 14-day plan, added at explicit request; ate into the
+      Day 12-14 buffer).
 - [ ] Day 11 — full qualitative demo on own photos (keep face-cluster output
       out of anything published — demo live only).
-- [ ] Day 12–14 — training buffer, polish, rehearse.
+- [ ] Day 12–14 — training buffer, polish, rehearse (compressed to make
+      room for the backend/UI work above).
 
-UI/demo page is done for now (see above) — do not add more visual
-effects before the pipeline exists. Phase 1 eval is 2026-09-14.
+## 2026-09-21 (later) — Day 9-10 done, plus a scope change: live backend + UI
+
+Decision: instead of keeping the site as a static illustrative mockup for
+Phase 1, we're wiring it to a real backend that actually runs the
+pipeline on uploaded photos. Flagged before starting that this costs real
+days not in the original plan — proceeding anyway, compressing the
+Day 12-14 buffer to make room.
+
+**Day 9 — Caption** (`src/caption_events.py`): BLIP
+(`Salesforce/blip-image-captioning-base`), pretrained, inference only —
+no training, matching the plan. Verified on real Wikimedia photos, real
+generated captions (one had BLIP's known repetition quirk on a temple
+photo — an off-the-shelf inference limitation, not something to fix
+since we're not training this model).
+
+**Day 10 — Fusion** (`src/build_timeline.py`): runs Extract -> Cluster ->
+Caption over a folder of photos and merges the result into one ordered
+timeline. **Real bug caught here**: DBSCAN's `-1` label means "not part
+of any multi-photo cluster," not "these are all the same event" — the
+first version grouped every standalone photo under the literal key `-1`,
+merging 22 unrelated singleton photos into one fake 22-photo mega-event.
+Fixed by giving every standalone record its own unique event. Verified
+against the full 42-photo Wikimedia set post-fix: 24 correctly-separated
+events (22 real singles + the 2 genuine multi-photo clusters found on
+Day 3-4).
+
+**Backend** (`src/api.py`): Flask API wrapping `build_timeline()` behind
+`POST /api/timeline` (multipart photo upload -> JSON timeline with
+base64 thumbnails). Real bug caught and fixed: Flask's `debug=True`
+file-watching reloader was falsely detecting changes in torch/stdlib
+files mid-request and restarting the server, killing in-flight uploads
+with connection resets — set `debug=False` (production/gunicorn doesn't
+use this reloader anyway, so this only affected local testing). Verified
+with a real 12-photo upload end-to-end: 6 correctly-clustered events
+returned over HTTP, ~3 minutes on CPU (captioning is the slow part).
+
+**Frontend** (`web/index.html`): added a "Try it on your own photos"
+section, clearly distinguished from the existing illustrative "What comes
+out the other side" example above it — this one is real, calls the
+backend, renders actual results. `API_BASE` auto-detects localhost vs
+production so the same file works for local testing and the deployed
+site. **Also caught and fixed a real, pre-existing bug while testing
+this**: the page had no `<meta charset="utf-8">` at all, so em-dashes and
+middots throughout the *entire existing site* (not just the new section)
+were silently mojibake-corrupted in some browser/server configurations.
+Tested the whole upload -> backend -> render flow live in a browser with
+real photos (via a local static server + the local Flask API) — 3 real
+events rendered correctly with real captions and places, and confirmed
+the charset fix resolved the encoding across the whole page.
+
+**Not done yet**: actually deploying the backend (Render web service).
+Real open question before deploying: `torch` + `transformers` +
+`facenet-pytorch` together are heavy — free-tier Render (512MB RAM) may
+not be enough to hold the models in memory. Needs a decision (accept
+free-tier risk and see, or move to a paid tier) before going live —
+holding off on that until discussed.

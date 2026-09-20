@@ -1,14 +1,18 @@
 # Face recognition (Recognize stage) — confirmed working via
 # src/smoke_test_face_model.py and src/smoke_test_celeba_triplets.py
 # on 2026-09-20
+#
+# facenet-pytorch==2.6.0 is NOT listed here on purpose. Its published
+# metadata pins numpy<2.0.0, Pillow<10.3.0, torch<2.3.0, torchvision<0.18.0
+# — badly outdated ranges that conflict with what transformers/datasets
+# need here. It has to be installed separately with --no-deps (see
+# deploy notes below / the Render build command), the same way it's
+# installed locally. Its actual runtime code works fine against modern
+# torch/Pillow/numpy — only its stale declared metadata doesn't.
 torch>=2.12
 torchvision>=0.27
-facenet-pytorch==2.6.0
 pillow>=11
-numpy>=1.24,<2   # facenet-pytorch 2.6.0 pins numpy<2.0.0 — this worked locally
-                 # only because facenet-pytorch was installed with --no-deps
-                 # there; a clean pip install (like Render's) correctly
-                 # rejects numpy>=2 as a real conflict
+numpy>=2
 requests>=2.32
 scikit-learn>=1.5
 datasets>=5.0   # streams the CelebA subset (flwrlabs/celeba on HF Hub)

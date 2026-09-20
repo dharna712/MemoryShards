@@ -205,6 +205,46 @@ cannot separate these people. This is the concrete before/after evidence
 for the report — re-run the same test once the fine-tuned checkpoint is
 in `checkpoints/` and it should correctly split into ~4 clusters.
 
+## 2026-09-21 — Day 3-4 done: classical pipeline, the safety-net milestone
+
+Built and validated the whole non-DL half of the pipeline — EXIF
+extraction, reverse geocoding, DBSCAN event clustering — with zero
+training or model inference involved. This runs end-to-end and produces
+a real timeline right now, independent of how the face-recognition
+training turns out.
+
+**Data**: `src/download_wikimedia_geotagged.py` searches Commons across
+10 travel-shaped topics (beach, temple, street market, etc.) for photos
+with confirmed location + date metadata. Two real bugs caught and fixed
+along the way: (1) Commons file URLs carry `?utm_source=...` tracking
+params, which broke naive file-extension checks; (2) only 42/98 initial
+downloads had genuine *embedded* EXIF GPS (the rest only had it as
+Commons page metadata, not in the file itself) — kept only the 42 with
+real embedded GPS, and shrank originals from 795MB to 16MB by resizing
+while explicitly re-attaching the original EXIF bytes (a plain resize
+would've stripped it).
+
+**Extract** (`src/extract_metadata.py`): reads DateTimeOriginal + GPS
+straight from each photo's own EXIF (converts GPS DMS to decimal,
+handles the GPS sub-IFD), then reverse-geocodes coordinates to a place
+name via `reverse_geocoder` (offline, bundled lookup table, no API
+calls/rate limits). 29/42 photos yielded full usable metadata.
+
+**Cluster** (`src/cluster_events.py`): DBSCAN over a joint time+geo
+distance (haversine km + hours, combined into one scale). Tested two
+ways since the real data alone can't prove both directions:
+- *Real Wikimedia photos* — found 2 unexpected genuine multi-photo
+  events (a 5-photo Melbourne market series, a 2-photo Hong Kong café
+  pair) sitting in the "unrelated" search results — turned out to be a
+  single photographer's numbered photo series from one outing in each
+  case. Correct behavior, not a bug — initially mis-flagged this as a
+  failure before checking by hand.
+- *Synthetic same-trip photos* (clearly fabricated, jittered around
+  Gateway of India / Marine Drive) — correctly recovered exactly the
+  2 fabricated events from 7 photos. This is the positive-case proof the
+  real data alone couldn't provide (nothing in the real set was
+  actually taken close together on purpose).
+
 ## Next Steps
 
 - [x] Day 1 — face-model smoke test.
@@ -212,13 +252,15 @@ in `checkpoints/` and it should correctly split into ~4 clusters.
       logic-verified locally on real data. Fixed a GPU-only
       CUDA-forking crash (`num_workers=2` -> `0`) found on the first
       real Colab run.
+- [x] Day 3-4 — classical pipeline (Extract + reverse geocode + DBSCAN
+      cluster) built and validated on real Wikimedia data + a synthetic
+      positive-case check. Safety-net milestone reached: a real timeline
+      can be produced with zero DL involved.
 - [x] Evaluation harness built + pretrained baseline recorded (58.5%
       verification accuracy on unseen identities) — ready to compare
       against the fine-tuned checkpoint once training finishes.
 - [x] `src/cluster_own_photos.py` built and verified on CelebA data —
       ready to point at real personal photos on Day 8.
-- [ ] Day 3–4 — EXIF extraction + reverse geocoding + DBSCAN clustering
-      (classical pipeline, no DL — safety-net milestone).
 - [ ] Day 5–7 — actually run `notebooks/train_face_recognizer.ipynb` on
       Colab for real (8 epochs); download the resulting checkpoint into
       the repo's `checkpoints/` folder (gitignored).

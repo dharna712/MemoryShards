@@ -10,8 +10,10 @@ requests>=2.32
 scikit-learn>=1.5
 datasets>=5.0   # streams the CelebA subset (flwrlabs/celeba on HF Hub)
 
+# Classical pipeline (Extract + Cluster stages) — confirmed working via
+# src/extract_metadata.py and src/cluster_events.py on 2026-09-21
+python-dateutil>=2.9
+reverse_geocoder>=1.5
+
 # Added as later pipeline stages are built (not needed yet):
-# exifread or piexif       — EXIF extraction (Extract stage)
-# python-dateutil          — timestamp parsing
-# reverse_geocoder         — GPS -> place names
 # transformers             — BLIP/CLIP captioning (Caption stage, inference only)

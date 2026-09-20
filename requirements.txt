@@ -1,0 +1,17 @@
+# Face recognition (Recognize stage) — confirmed working via
+# src/smoke_test_face_model.py and src/smoke_test_celeba_triplets.py
+# on 2026-09-20
+torch>=2.12
+torchvision>=0.27
+facenet-pytorch==2.6.0
+pillow>=11
+numpy>=2
+requests>=2.32
+scikit-learn>=1.5
+datasets>=5.0   # streams the CelebA subset (flwrlabs/celeba on HF Hub)
+
+# Added as later pipeline stages are built (not needed yet):
+# exifread or piexif       — EXIF extraction (Extract stage)
+# python-dateutil          — timestamp parsing
+# reverse_geocoder         — GPS -> place names
+# transformers             — BLIP/CLIP captioning (Caption stage, inference only)

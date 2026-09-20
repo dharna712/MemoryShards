@@ -5,7 +5,10 @@ torch>=2.12
 torchvision>=0.27
 facenet-pytorch==2.6.0
 pillow>=11
-numpy>=2
+numpy>=1.24,<2   # facenet-pytorch 2.6.0 pins numpy<2.0.0 — this worked locally
+                 # only because facenet-pytorch was installed with --no-deps
+                 # there; a clean pip install (like Render's) correctly
+                 # rejects numpy>=2 as a real conflict
 requests>=2.32
 scikit-learn>=1.5
 datasets>=5.0   # streams the CelebA subset (flwrlabs/celeba on HF Hub)

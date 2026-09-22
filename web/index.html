@@ -543,9 +543,22 @@
   // Caption). Unlike the illustrative example above, this one runs on
   // whatever photos the visitor uploads.
   (function () {
-    const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
-      ? 'http://localhost:5000'
-      : 'https://memoryshards-api.onrender.com';
+    // The backend is currently self-hosted for demos rather than deployed
+    // permanently (Render's free tier doesn't have enough RAM to hold the
+    // model in memory — confirmed, not assumed). A self-hosted tunnel gets
+    // a new URL every time it's restarted, so this reads an override
+    // instead of hardcoding one: visit the site once with ?api=<url> on
+    // demo day and it's remembered (localStorage) after that.
+    const params = new URLSearchParams(window.location.search);
+    const overrideApi = params.get('api');
+    if (overrideApi) localStorage.setItem('memoryshards_api_base', overrideApi);
+    const savedApi = localStorage.getItem('memoryshards_api_base');
+
+    const API_BASE = overrideApi || savedApi ||
+      (['localhost', '127.0.0.1'].includes(window.location.hostname)
+        ? 'http://localhost:5000'
+        : 'https://memoryshards-api.onrender.com');
+
     const input = document.getElementById('photoInput');
     const btn = document.getElementById('btnRunDemo');
     const status = document.getElementById('demoStatus');

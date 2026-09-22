@@ -45,10 +45,16 @@ def caption_image(path):
 
 
 def caption_event(photo_paths):
-    """Captions every photo in an event cluster and returns the first
-    non-trivial one — good enough for a v1; could summarize/vote later."""
-    captions = [caption_image(p) for p in photo_paths]
-    return captions[0] if captions else None
+    """Captions only the first photo in an event cluster — good enough
+    for a v1; could caption+summarize/vote across all of them later.
+    Deliberately NOT captioning every photo in the cluster: a 5-photo
+    event only needs one representative caption, and BLIP inference is
+    the slowest step in the whole pipeline (confirmed: an 11-photo batch
+    with 2 multi-photo clusters took 2m32s wall-clock before this fix,
+    most of it redundant captioning of photos whose result was discarded)."""
+    if not photo_paths:
+        return None
+    return caption_image(photo_paths[0])
 
 
 def main():

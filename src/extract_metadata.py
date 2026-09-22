@@ -75,8 +75,12 @@ def extract_photo_metadata(path):
     place = None
     if gps:
         # reverse_geocoder is offline (bundled city/country lookup table) —
-        # no API calls, no rate limits, works without internet
-        result = rg.search([gps])[0]
+        # no API calls, no rate limits, works without internet.
+        # mode=1 forces single-threaded lookup — its default (mode=2) spawns
+        # worker processes on every call, which cost 3-5s of overhead per
+        # photo when profiled, dwarfing the actual KD-tree query time for a
+        # single coordinate.
+        result = rg.search([gps], mode=1)[0]
         place = f"{result['name']}, {result['admin1']}, {result['cc']}"
 
     return {

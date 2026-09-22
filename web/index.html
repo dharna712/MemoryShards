@@ -601,6 +601,18 @@
 
       try {
         const res = await fetch(API_BASE + '/api/timeline', { method: 'POST', body: formData });
+
+        // A non-2xx response (e.g. a 500 error page) isn't JSON — parsing
+        // it as JSON throws, and that exception used to land in the catch
+        // block below and get mislabeled as "can't reach the server" even
+        // though the server was reached fine and just errored. Surface the
+        // real status instead of masking it.
+        if (!res.ok) {
+          const bodyText = await res.text();
+          setStatus(`Server error (HTTP ${res.status}): ${bodyText.slice(0, 200)}`, true);
+          return;
+        }
+
         const data = await res.json();
 
         if (data.error) {
@@ -612,7 +624,10 @@
           renderEvents(data.events);
         }
       } catch (err) {
-        setStatus('Could not reach the server. If this is the first request in a while, the free-tier backend may be waking up — try again in about 30 seconds.', true);
+        // This catch only fires now for genuine network-level failures —
+        // fetch() throwing before any response came back at all.
+        setStatus(`Could not reach the server (${err.message}). If this is the first ` +
+          'request in a while, the backend may be waking up — try again in about 30 seconds.', true);
       } finally {
         btn.disabled = false;
       }

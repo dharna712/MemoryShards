@@ -245,6 +245,21 @@
   }
   .demo-status { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; min-height: 1.4em; }
   .demo-status.error { color: #e3695f; }
+  .tl-expand {
+    all: unset; cursor: pointer; color: var(--crack); font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-decoration: underline; text-underline-offset: 2px;
+  }
+  .tl-expand:hover { opacity: 0.8; }
+  .tl-gallery {
+    display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 18px 104px; align-items: center;
+  }
+  .tl-gallery-thumb {
+    width: 64px; height: 48px; background-size: cover; background-position: center;
+    border-radius: 4px; box-shadow: var(--shadow); flex: none;
+  }
+  .tl-gallery-note {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted);
+  }
 
   /* ---------------- MEMORY REEL ---------------- */
   .reel-section { padding: 64px 0 12px; text-align: center; }
@@ -575,13 +590,39 @@
       for (const e of events) {
         const row = document.createElement('div');
         row.className = 'tl-row';
-        const countSuffix = e.photo_count > 1 ? ` · ${e.photo_count} photos` : '';
+
+        const hasMore = e.photo_count > 1;
+        const countSuffix = hasMore
+          ? ` · <button type="button" class="tl-expand">${e.photo_count} photos ▾</button>`
+          : '';
         row.innerHTML =
           '<div class="tl-time">' + e.display_time + '</div>' +
           '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')"></div>' +
           '<div class="tl-label">' + (e.caption || '(no caption)') +
           '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span></div>';
         results.appendChild(row);
+
+        if (hasMore) {
+          const gallery = document.createElement('div');
+          gallery.className = 'tl-gallery';
+          gallery.hidden = true;
+          gallery.innerHTML = e.thumbnails
+            .map(src => `<div class="tl-gallery-thumb" style="background-image:url('${src}')"></div>`)
+            .join('');
+          if (e.more_photos_not_shown > 0) {
+            const note = document.createElement('div');
+            note.className = 'tl-gallery-note';
+            note.textContent = `+${e.more_photos_not_shown} more not shown`;
+            gallery.appendChild(note);
+          }
+          results.appendChild(gallery);
+
+          const expandBtn = row.querySelector('.tl-expand');
+          expandBtn.addEventListener('click', () => {
+            gallery.hidden = !gallery.hidden;
+            expandBtn.textContent = `${e.photo_count} photos ${gallery.hidden ? '▾' : '▴'}`;
+          });
+        }
       }
     }
 

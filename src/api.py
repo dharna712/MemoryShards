@@ -36,6 +36,7 @@ app = Flask(__name__)
 CORS(app)  # the frontend is served from a different Render service/domain
 
 THUMBNAIL_SIZE = (240, 240)
+MAX_THUMBNAILS_PER_EVENT = 8  # caps payload size for events with many photos
 
 
 def thumbnail_base64(photo_path):
@@ -47,14 +48,21 @@ def thumbnail_base64(photo_path):
 
 
 def event_to_json(event):
+    thumbnails = [thumbnail_base64(p) for p in event["photos"][:MAX_THUMBNAILS_PER_EVENT]]
     return {
         "start_time": event["start_time"].isoformat(),
-        "display_time": event["start_time"].strftime("%d %b, %I:%M %p"),
+        # %-d avoids a leading zero on the day; year included — the
+        # original format silently dropped it, which is genuinely
+        # confusing once photos span more than one year (this dataset
+        # spans 2009-2019)
+        "display_time": event["start_time"].strftime("%d %b %Y, %I:%M %p"),
         "place": event["place"],
         "caption": event["caption"],
         "photo_count": event["photo_count"],
         "standalone": event["standalone"],
-        "thumbnail": thumbnail_base64(event["photos"][0]),
+        "thumbnail": thumbnails[0],
+        "thumbnails": thumbnails,
+        "more_photos_not_shown": max(0, event["photo_count"] - len(thumbnails)),
     }
 
 

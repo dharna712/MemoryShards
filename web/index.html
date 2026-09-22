@@ -238,13 +238,54 @@
   .live-demo-section { padding: 56px 0; border-top: 1px dashed var(--border); }
   .live-demo-section h2 { font-size: 22px; margin-bottom: 6px; }
   .live-demo-section .section-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 26px; max-width: 64ch; }
-  .live-demo-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
-  input#photoInput {
-    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-muted);
-    max-width: 100%;
+  .dropzone {
+    position: relative; border: 1.5px dashed var(--border); border-radius: 12px;
+    padding: 28px; margin-bottom: 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    background: var(--surface);
   }
+  .dropzone:hover, .dropzone:focus-visible { border-color: var(--memory); outline: none; }
+  .dropzone.dragover { border-color: var(--memory); background: var(--surface-2); }
+  .dropzone-hint {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 14px; color: var(--text-muted); text-align: center;
+  }
+  .dropzone-icon { font-size: 20px; color: var(--memory); }
+  .dropzone-browse { color: var(--crack); text-decoration: underline; text-underline-offset: 2px; }
+  .dropzone-previews {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px;
+  }
+  .dropzone-previews:empty { margin-top: 0; }
+  .preview-thumb {
+    position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden;
+    box-shadow: var(--shadow); flex: none;
+  }
+  .preview-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .preview-remove {
+    all: unset; position: absolute; top: 2px; right: 2px; width: 18px; height: 18px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    background: rgba(10,12,18,0.75); color: #fff; border-radius: 50%; font-size: 11px; line-height: 1;
+  }
+  .preview-remove:hover { background: #e3695f; }
+  .live-demo-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+  .demo-filecount { font-size: 12px; color: var(--text-muted); }
+  .demo-progress {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 12.5px; color: var(--text-muted);
+  }
+  .demo-spinner {
+    width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border);
+    border-top-color: var(--memory); animation: demo-spin 0.7s linear infinite; flex: none;
+  }
+  @keyframes demo-spin { to { transform: rotate(360deg); } }
   .demo-status { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; min-height: 1.4em; }
   .demo-status.error { color: #e3695f; }
+  .demo-skip-note {
+    font-size: 11.5px; color: var(--text-muted); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 18px;
+  }
+  .demo-skip-note b { color: var(--text); }
+  .demo-empty { font-size: 13px; color: var(--text-muted); font-style: italic; }
+  .demo-empty[hidden], .demo-skip-note[hidden], .demo-progress[hidden] { display: none; }
   .tl-expand {
     all: unset; cursor: pointer; color: var(--crack); font-family: 'JetBrains Mono', monospace;
     font-size: 11px; text-decoration: underline; text-underline-offset: 2px;
@@ -473,12 +514,30 @@
   <section class="live-demo-section">
     <h2 class="reveal">Try it on your own photos</h2>
     <p class="section-sub reveal">Unlike the example above, this one is real. Upload a few photos that still have their original location and timestamp data — most phone camera photos do — and the actual pipeline runs: EXIF extraction, reverse geocoding, event clustering, and captioning with a pretrained vision-language model.</p>
+
+    <div class="dropzone" id="dropzone" tabindex="0">
+      <input type="file" id="photoInput" multiple accept="image/*" hidden />
+      <div class="dropzone-hint" id="dropzoneHint">
+        <span class="dropzone-icon">↥</span>
+        <span>Drag photos here, or <span class="dropzone-browse">browse</span></span>
+      </div>
+      <div class="dropzone-previews" id="dropzonePreviews"></div>
+    </div>
+
     <div class="live-demo-controls">
-      <input type="file" id="photoInput" multiple accept="image/*" />
-      <button class="primary" id="btnRunDemo">Reconstruct my timeline</button>
+      <button class="primary" id="btnRunDemo" disabled>Reconstruct my timeline</button>
+      <span class="demo-filecount mono" id="demoFileCount"></span>
+    </div>
+
+    <div class="demo-progress" id="demoProgress" hidden>
+      <span class="demo-spinner"></span>
+      <span class="mono" id="demoProgressText">Extracting EXIF metadata…</span>
     </div>
     <div class="demo-status mono" id="demoStatus"></div>
+    <div class="demo-skip-note mono" id="demoSkipNote" hidden></div>
+
     <div class="tl" id="demoResults"></div>
+    <p class="demo-empty mono" id="demoEmpty">No results yet — add photos above and hit Reconstruct.</p>
   </section>
 </div>
 
@@ -574,18 +633,117 @@
         ? 'http://localhost:5000'
         : 'https://memoryshards-api.onrender.com');
 
+    const dropzone = document.getElementById('dropzone');
     const input = document.getElementById('photoInput');
+    const previewsEl = document.getElementById('dropzonePreviews');
+    const fileCountEl = document.getElementById('demoFileCount');
     const btn = document.getElementById('btnRunDemo');
     const status = document.getElementById('demoStatus');
+    const progress = document.getElementById('demoProgress');
+    const progressText = document.getElementById('demoProgressText');
+    const skipNote = document.getElementById('demoSkipNote');
     const results = document.getElementById('demoResults');
+    const emptyState = document.getElementById('demoEmpty');
+
+    // Managed as our own array rather than relying on input.files directly —
+    // FileList is read-only, and we need to remove individual files after
+    // the picker/drop already populated it (e.g. clicking a preview's ×).
+    let selectedFiles = [];
 
     function setStatus(text, isError) {
       status.textContent = text;
       status.classList.toggle('error', !!isError);
     }
 
+    function renderPreviews() {
+      previewsEl.innerHTML = '';
+      for (const file of selectedFiles) {
+        const thumb = document.createElement('div');
+        thumb.className = 'preview-thumb';
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'preview-remove';
+        removeBtn.type = 'button';
+        removeBtn.textContent = '✕';
+        removeBtn.setAttribute('aria-label', `Remove ${file.name}`);
+        removeBtn.addEventListener('click', (evt) => {
+          evt.stopPropagation();
+          selectedFiles = selectedFiles.filter(f => f !== file);
+          renderPreviews();
+        });
+        thumb.appendChild(img);
+        thumb.appendChild(removeBtn);
+        previewsEl.appendChild(thumb);
+      }
+      fileCountEl.textContent = selectedFiles.length
+        ? `${selectedFiles.length} photo${selectedFiles.length === 1 ? '' : 's'} selected`
+        : '';
+      btn.disabled = selectedFiles.length === 0;
+    }
+
+    function addFiles(fileList) {
+      const incoming = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      const existingKey = new Set(selectedFiles.map(f => f.name + f.size));
+      for (const f of incoming) {
+        if (!existingKey.has(f.name + f.size)) selectedFiles.push(f);
+      }
+      renderPreviews();
+    }
+
+    dropzone.addEventListener('click', () => input.click());
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', () => addFiles(input.files));
+
+    ['dragenter', 'dragover'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); })
+    );
+    ['dragleave', 'drop'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); })
+    );
+    dropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+    });
+
+    const PROGRESS_STAGES = [
+      'Extracting EXIF timestamp + GPS…',
+      'Reverse-geocoding locations…',
+      'Clustering photos into events…',
+      'Captioning with a vision-language model…',
+    ];
+    let progressTimer = null;
+
+    function startProgress() {
+      let i = 0;
+      progressText.textContent = PROGRESS_STAGES[0];
+      progress.hidden = false;
+      progressTimer = setInterval(() => {
+        i = (i + 1) % PROGRESS_STAGES.length;
+        progressText.textContent = PROGRESS_STAGES[i];
+      }, 2500);
+    }
+
+    function stopProgress() {
+      clearInterval(progressTimer);
+      progress.hidden = true;
+    }
+
+    function renderSkipNote(skipped) {
+      if (!skipped || !skipped.length) {
+        skipNote.hidden = true;
+        return;
+      }
+      skipNote.hidden = false;
+      const items = skipped.map(s => `${s.filename} <span style="opacity:0.7">(${s.reason})</span>`).join(', ');
+      skipNote.innerHTML = `<b>${skipped.length} photo${skipped.length === 1 ? '' : 's'} skipped</b> — no usable timestamp/GPS: ${items}`;
+    }
+
     function renderEvents(events) {
       results.innerHTML = '';
+      emptyState.hidden = events.length > 0;
       events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
       for (const e of events) {
         const row = document.createElement('div');
@@ -627,17 +785,18 @@
     }
 
     btn.addEventListener('click', async () => {
-      const files = input.files;
-      if (!files || !files.length) {
-        setStatus('Pick a few photos first.', true);
+      if (!selectedFiles.length) {
+        setStatus('Add a few photos first.', true);
         return;
       }
 
       const formData = new FormData();
-      for (const file of files) formData.append('photos', file);
+      for (const file of selectedFiles) formData.append('photos', file);
 
       results.innerHTML = '';
-      setStatus('Running the pipeline — this can take a minute, especially on the first request.');
+      skipNote.hidden = true;
+      setStatus('');
+      startProgress();
       btn.disabled = true;
 
       try {
@@ -660,9 +819,11 @@
           setStatus(data.error, true);
         } else if (!data.events || !data.events.length) {
           setStatus(data.message || 'No usable photos — none had both a timestamp and GPS location.', true);
+          renderSkipNote(data.skipped);
         } else {
           setStatus('');
           renderEvents(data.events);
+          renderSkipNote(data.skipped);
         }
       } catch (err) {
         // This catch only fires now for genuine network-level failures —
@@ -670,7 +831,8 @@
         setStatus(`Could not reach the server (${err.message}). If this is the first ` +
           'request in a while, the backend may be waking up — try again in about 30 seconds.', true);
       } finally {
-        btn.disabled = false;
+        stopProgress();
+        btn.disabled = selectedFiles.length === 0;
       }
     });
   })();

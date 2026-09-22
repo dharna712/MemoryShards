@@ -83,16 +83,17 @@ def timeline():
             if f.filename:
                 f.save(tmp_path / f.filename)
 
-        events = build_timeline(tmp_path, caption=True)
+        events, skipped = build_timeline(tmp_path, caption=True)
 
         if not events:
             return jsonify({
                 "events": [],
+                "skipped": skipped,
                 "message": "No usable photos — none had both a timestamp and GPS "
                            "location in their EXIF data.",
             })
 
-        return jsonify({"events": [event_to_json(e) for e in events]})
+        return jsonify({"events": [event_to_json(e) for e in events], "skipped": skipped})
 
 
 if __name__ == "__main__":

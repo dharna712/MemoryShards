@@ -28,24 +28,35 @@ def find_photos(photos_dir):
 
 
 def build_timeline(photos_dir, caption=True):
-    """Returns a list of events, sorted chronologically:
-    [{'start_time': datetime, 'place': str, 'caption': str|None,
-      'photo_count': int, 'photos': [str, ...]}, ...]
-    Photos with no usable EXIF (no timestamp or no GPS) are skipped —
-    they can't be placed on a timeline, same as a real system would."""
+    """Returns (timeline, skipped) where:
+    - timeline: list of events, sorted chronologically —
+      [{'start_time': datetime, 'place': str, 'caption': str|None,
+        'photo_count': int, 'photos': [str, ...]}, ...]
+    - skipped: [{'filename': str, 'reason': str}, ...] — photos with no
+      usable EXIF (no timestamp or no GPS) can't be placed on a timeline,
+      same as a real system would face, but callers (the API, in
+      particular) need to know WHICH photos and WHY rather than just a
+      silent drop, so uploaders aren't left guessing why their count of
+      events doesn't match their count of photos."""
     photo_paths = find_photos(photos_dir)
 
     records = []
-    skipped = 0
+    skipped = []
     for path in photo_paths:
         meta = extract_photo_metadata(path)
-        if meta["timestamp"] and meta["lat"] is not None:
+        has_time, has_gps = bool(meta["timestamp"]), meta["lat"] is not None
+        if has_time and has_gps:
             records.append(meta)
         else:
-            skipped += 1
+            reason = (
+                "no timestamp or GPS in EXIF" if not has_time and not has_gps
+                else "no timestamp in EXIF" if not has_time
+                else "no GPS in EXIF"
+            )
+            skipped.append({"filename": path.name, "reason": reason})
 
     if skipped:
-        print(f"[fusion] skipped {skipped}/{len(photo_paths)} photos (no usable EXIF timestamp/GPS)")
+        print(f"[fusion] skipped {len(skipped)}/{len(photo_paths)} photos (no usable EXIF timestamp/GPS)")
 
     records = cluster_events(records)
 
@@ -79,15 +90,17 @@ def build_timeline(photos_dir, caption=True):
         })
 
     timeline.sort(key=lambda e: e["start_time"])
-    return timeline
+    return timeline, skipped
 
 
-def print_timeline(timeline):
+def print_timeline(timeline, skipped=None):
     for event in timeline:
         time_str = event["start_time"].strftime("%d %b, %I:%M %p")
         caption_str = f" — {event['caption']}" if event["caption"] else ""
         count_str = f" ({event['photo_count']} photos)" if event["photo_count"] > 1 else ""
         print(f"  {time_str}  {event['place']}{caption_str}{count_str}")
+    for s in skipped or []:
+        print(f"  [skipped] {s['filename']} — {s['reason']}")
 
 
 if __name__ == "__main__":
@@ -96,5 +109,5 @@ if __name__ == "__main__":
 
     data_dir = Path(__file__).resolve().parent.parent / "data" / "raw" / "wikimedia_geotagged"
     print(f"[fusion] building timeline from {data_dir}\n")
-    timeline = build_timeline(data_dir, caption=False)  # caption=False for a fast structural test first
-    print_timeline(timeline)
+    timeline, skipped = build_timeline(data_dir, caption=False)  # caption=False for a fast structural test first
+    print_timeline(timeline, skipped)

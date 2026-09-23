@@ -36,6 +36,12 @@
     <h2 class="reveal">Try it on your own photos</h2>
     <p class="section-sub reveal">This is real. Upload a few photos that still have their original location and timestamp data — most phone camera photos do — and the actual pipeline runs: EXIF extraction, reverse geocoding, event clustering, and captioning with a pretrained vision-language model.</p>
 
+    <div class="guide-steps reveal">
+      <div class="guide-step"><span class="guide-num mono">1</span><span>Upload a few photos</span></div>
+      <div class="guide-step"><span class="guide-num mono">2</span><span>Run the real pipeline</span></div>
+      <div class="guide-step"><span class="guide-num mono">3</span><span>Explore your timeline</span></div>
+    </div>
+
     <div class="dropzone" id="dropzone" tabindex="0">
       <input type="file" id="photoInput" multiple accept="image/*" hidden />
       <div class="dropzone-hint" id="dropzoneHint">
@@ -211,9 +217,10 @@
       results.innerHTML = '';
       emptyState.hidden = events.length > 0;
       events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-      for (const e of events) {
+      events.forEach((e, i) => {
         const row = document.createElement('div');
-        row.className = 'tl-row';
+        row.className = 'tl-row tl-row-enter';
+        row.style.animationDelay = `${Math.min(i, 8) * 60}ms`;
 
         const hasMore = e.photo_count > 1;
         const countSuffix = hasMore
@@ -247,7 +254,7 @@
             expandBtn.textContent = `${e.photo_count} photos ${gallery.hidden ? '▾' : '▴'}`;
           });
         }
-      }
+      });
     }
 
     btn.addEventListener('click', async () => {

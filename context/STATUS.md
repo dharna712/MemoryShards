@@ -332,3 +332,33 @@ Real open question before deploying: `torch` + `transformers` +
 not be enough to hold the models in memory. Needs a decision (accept
 free-tier risk and see, or move to a paid tier) before going live —
 holding off on that until discussed.
+
+## 2026-09-25 — Day 5-7 done: face model trained, evaluated on unseen identities
+
+Trained `notebooks/train_face_recognizer.ipynb` on Colab (8 epochs, final
+checkpoint from epoch 7) and pulled `face_embedding_head.pt` into
+`checkpoints/` (gitignored, 112MB).
+
+**Held-out verification** (`src/evaluate_face_model.py`, 200 pairs from 29
+CelebA identities never seen in training):
+
+| Model | Same-person sim | Different-person sim | Best accuracy |
+|---|---|---|---|
+| Pretrained VGGFace2 only | 0.946 | 0.928 | 59.0% |
+| + our CelebA fine-tuning | 0.625 | 0.029 | **94.0%** |
+
+Fine-tuning moved held-out accuracy by +35 points. The pretrained
+embeddings barely separated same/different pairs (0.946 vs 0.928); the
+fine-tuned ones separate them cleanly (0.625 vs 0.029).
+
+**Clustering test** (`src/cluster_own_photos.py`, 14 photos of 4 unseen
+identities — the same test where the pretrained-only model merged everyone
+into one cluster): at eps 0.5 it recovers 3 of the 4 identities exactly
+(4/4/4 photos, no mixing). The 4th identity has only 2 photos and splits
+into two singletons; eps 0.6 still splits it and eps 0.7 merges it into
+another person, so those two photos are simply hard (a real limit, not a
+threshold issue). Default eps stays a judgment call for real photos.
+
+- [x] Day 5-7 — train + download checkpoint.
+- [ ] Day 8 — run the clustering on the team's own photos (private: demo
+      live only, never publish the output).

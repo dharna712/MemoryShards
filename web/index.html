@@ -34,7 +34,10 @@
   </div>
 </header>
 
-<div class="panel panel-hero"><div class="panel-face"><div class="wrap">
+<div class="panel panel-hero"><div class="panel-face">
+  <video class="hero-video" data-src="media/hero-loop.mp4" poster="media/hero-poster.jpg" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+  <div class="hero-veil" aria-hidden="true"></div>
+  <div class="wrap">
   <section class="hero">
     <div class="hero-copy">
       <span class="hero-q">Where did the day go?</span>
@@ -168,6 +171,12 @@
 </div></div></div>
 
 <div class="wrap above-stack">
+  <div class="stack-strip mono" aria-label="Built with">
+    <span style="--i:0">EXIF</span><span style="--i:1">DBSCAN</span><span style="--i:2">FaceNet</span><span style="--i:3">CelebA</span><span style="--i:4">Agglomerative</span><span style="--i:5">BLIP</span><span style="--i:6">Flask</span>
+  </div>
+</div>
+
+<div class="wrap above-stack">
   <section class="proof">
     <span class="flow-eyebrow mono">THE PROOF</span>
     <h2 class="reveal">Measured on faces it <span class="accent">never saw.</span></h2>
@@ -264,6 +273,53 @@
     window.addEventListener('resize', onScroll);
     update();
   })();
+  // Hero background video: only loaded when it makes sense (dark theme, wide screen,
+  // motion allowed, no data-saver), and paused once the hero is far behind.
+  (function () {
+    const v = document.querySelector('.hero-video');
+    if (!v) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const saveData = navigator.connection && navigator.connection.saveData;
+    const isLight = () => {
+      const t = document.documentElement.getAttribute('data-theme');
+      return t ? t === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
+    };
+    function sync() {
+      const want = !reduce && !saveData && window.innerWidth > 820 && !isLight();
+      if (want && window.scrollY < window.innerHeight * 2) {
+        if (!v.getAttribute('src')) v.src = v.dataset.src;
+        v.play().catch(() => {});
+      } else {
+        v.pause();
+      }
+    }
+    v.addEventListener('playing', () => v.classList.add('is-ready'));
+    new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    window.addEventListener('resize', sync);
+    window.addEventListener('scroll', sync, { passive: true });
+    sync();
+  })();
+
+  // CTA text scramble on hover.
+  (function () {
+    const a = document.querySelector('.cta-link');
+    if (!a || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const final = a.textContent;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/';
+    let raf;
+    a.style.minWidth = a.offsetWidth + 'px';
+    a.addEventListener('mouseenter', () => {
+      let f = 0;
+      cancelAnimationFrame(raf);
+      const step = () => {
+        f++;
+        a.textContent = [...final].map((c, i) => (c === ' ' || i < f / 2) ? c : chars[Math.floor(Math.random() * chars.length)]).join('');
+        if (f / 2 < final.length) raf = requestAnimationFrame(step); else a.textContent = final;
+      };
+      step();
+    });
+  })();
+
   // HUD clock: the page is one day, and scrolling moves it from 08:00 to 22:00.
   (function () {
     const el = document.querySelector('.hud-clock');

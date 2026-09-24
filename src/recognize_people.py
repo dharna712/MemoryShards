@@ -42,7 +42,8 @@ def _load_models():
     global _models
     if _models is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        mtcnn = MTCNN(image_size=160, margin=14, device=device, post_process=False)
+        # keep_all=True: extract() returns every requested face, not just the first (group photos)
+        mtcnn = MTCNN(image_size=160, margin=14, keep_all=True, device=device, post_process=False)
         model = InceptionResnetV1(pretrained="vggface2", classify=False).to(device)
         ckpt = torch.load(CHECKPOINT, map_location=device)
         model.load_state_dict(ckpt["model_state_dict"])

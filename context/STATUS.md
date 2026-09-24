@@ -405,4 +405,29 @@ lighting/ages/phone cameras than CelebA). Face output from personal photos
 stays private: demo live only, never publish it.
 
 - [x] Day 8 — clustering benchmarked on unseen faces; integrated.
-- [ ] Day 8b — run on the team's own photos (private, live demo only).
+
+## 2026-09-25 (evening) — Day 8b: first run on real personal photos
+
+Ran the Recognize stage on a folder of 91 personal photos (downloaded
+social-media style JPEGs, no EXIF, so they skip the timeline but exercise
+face recognition). Results stay private: no crops or names recorded here.
+
+- 82 faces kept across 64/91 photos; 14 photos had 2+ faces.
+- 15 clusters: one large (59 faces in 58 photos), one mid (7), the rest
+  small, 11 singletons.
+- Eyeballed contact sheets (scratch only, deleted): the large cluster is
+  visibly one person across glasses / sunglasses / B&W / bad lighting; the
+  7-face cluster is one person. The small clusters of *children* look
+  mixed, which fits the model (trained on adult celebrity faces).
+- Recall on real photos is lower than CelebA: some faces of the main
+  subject fall out as singletons.
+
+**Bug found by this run (couldn't show up on CelebA, one face per photo):**
+`MTCNN(keep_all=False)` makes `extract()` return only the first face, so
+any group photo crashed `recognize_people`. Fixed with `keep_all=True`. The
+API swallows recognition errors, so before the fix group photos silently
+returned no people.
+
+- [x] Day 8b — first real-photo run done.
+- [ ] Day 11 — full qualitative demo on own photos with EXIF+GPS (these
+      have none) so the timeline and the people strip appear together.

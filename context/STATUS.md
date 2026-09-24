@@ -360,5 +360,49 @@ another person, so those two photos are simply hard (a real limit, not a
 threshold issue). Default eps stays a judgment call for real photos.
 
 - [x] Day 5-7 — train + download checkpoint.
-- [ ] Day 8 — run the clustering on the team's own photos (private: demo
-      live only, never publish the output).
+
+## 2026-09-25 (later) — Recognize stage benchmarked and merged into the pipeline + UI
+
+**Unseen-face clustering benchmark** (`src/evaluate_clustering.py`): 230
+faces, 29 identities the model never saw. Compared clustering methods on
+the fine-tuned embeddings (pairwise precision / recall / ARI):
+
+| Method (best threshold) | Precision | Recall | ARI |
+|---|---|---|---|
+| DBSCAN, min_samples=1 (0.35) | 0.931 | 0.706 | 0.798 |
+| Agglomerative, complete linkage (0.7) | 0.963 | 0.786 | 0.862 |
+| **Agglomerative, average linkage (0.5)** | **0.988** | **0.804** | **0.883** |
+
+DBSCAN with min_samples=1 chains different people together: precision
+falls 0.93 -> 0.28 between eps 0.35 and 0.45, so it only works in a narrow
+window. Average linkage holds ARI > 0.83 across thresholds 0.45-0.6, so the
+pipeline uses it (threshold 0.5). Precision is what matters most here —
+better to split one person in two than to merge two people. Recall 0.80
+means some people get split across clusters (50 clusters for 29 people).
+
+**Preprocessing check (a wrong turn worth recording):** training and
+`evaluate_face_model.py` feed the model the raw 0-255 MTCNN crops;
+`fixed_image_standardization` only runs in the rare no-face fallback path.
+Adding standardization at inference collapses every face into one cluster.
+Inference must match training: raw crops, no standardization.
+
+**Merged into the app:** new `src/recognize_people.py` (detects all faces
+with MTCNN, filters by detection probability >= 0.97 and size >= 48px,
+embeds, clusters, returns per-person avatar + counts). `src/api.py` adds a
+`people` list to the response and a `people` id list per event; if the
+checkpoint is missing or recognition throws, the timeline is still
+returned without people. `web/try.html` shows a "N people found" strip with
+face avatars and puts the matching avatars on each event row. Landing page
+now lists Recognize as stage 3 (five stages) and the hero stat reads 94%.
+
+**End-to-end test:** 14 EXIF+GPS-tagged photos built from four unseen
+CelebA identities (synthetic fixtures, temp folder only) -> 2 events, 4
+people found (truth: 4), each event listing the correct people. First
+request ~62s cold (model load + captioning), then faster.
+
+**Not yet verified:** how it does on the team's own photos (different
+lighting/ages/phone cameras than CelebA). Face output from personal photos
+stays private: demo live only, never publish it.
+
+- [x] Day 8 — clustering benchmarked on unseen faces; integrated.
+- [ ] Day 8b — run on the team's own photos (private, live demo only).

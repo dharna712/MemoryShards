@@ -63,6 +63,7 @@
     <div class="demo-status mono" id="demoStatus"></div>
     <div class="demo-skip-note mono" id="demoSkipNote" hidden></div>
 
+    <div class="people-strip" id="peopleStrip" hidden></div>
     <div class="tl" id="demoResults"></div>
     <p class="demo-empty mono" id="demoEmpty">No results yet — add photos above and hit Reconstruct.</p>
   </section>
@@ -116,6 +117,7 @@
     const skipNote = document.getElementById('demoSkipNote');
     const results = document.getElementById('demoResults');
     const emptyState = document.getElementById('demoEmpty');
+    const peopleStrip = document.getElementById('peopleStrip');
 
     // Managed as our own array rather than relying on input.files directly —
     // FileList is read-only, and we need to remove individual files after
@@ -184,6 +186,7 @@
       'Extracting EXIF timestamp + GPS…',
       'Reverse-geocoding locations…',
       'Clustering photos into events…',
+      'Recognizing faces…',
       'Captioning with a vision-language model…',
     ];
     let progressTimer = null;
@@ -213,6 +216,40 @@
       skipNote.innerHTML = `<b>${skipped.length} photo${skipped.length === 1 ? '' : 's'} skipped</b> — no usable timestamp/GPS: ${items}`;
     }
 
+    let avatarById = {};
+
+    function renderPeople(people) {
+      avatarById = {};
+      peopleStrip.innerHTML = '';
+      if (!people || !people.length) { peopleStrip.hidden = true; return; }
+      peopleStrip.hidden = false;
+      const title = document.createElement('div');
+      title.className = 'people-title mono';
+      title.textContent = `${people.length} ${people.length === 1 ? 'person' : 'people'} found`;
+      peopleStrip.appendChild(title);
+      const row = document.createElement('div');
+      row.className = 'people-row';
+      for (const p of people) {
+        avatarById[p.id] = p;
+        const card = document.createElement('div');
+        card.className = 'person-card';
+        card.innerHTML =
+          '<img class="person-avatar" alt="' + p.label + '" src="' + p.avatar + '">' +
+          '<div class="person-label">' + p.label + '</div>' +
+          '<div class="person-meta mono">' + p.photo_count + (p.photo_count === 1 ? ' photo' : ' photos') + '</div>';
+        row.appendChild(card);
+      }
+      peopleStrip.appendChild(row);
+    }
+
+    function peopleChips(ids) {
+      if (!ids || !ids.length) return '';
+      return '<span class="tl-people">' + ids.map(id => {
+        const p = avatarById[id];
+        return p ? '<span class="tl-person"><img src="' + p.avatar + '" alt="">' + p.label + '</span>' : '';
+      }).join('') + '</span>';
+    }
+
     function renderEvents(events) {
       results.innerHTML = '';
       emptyState.hidden = events.length > 0;
@@ -230,7 +267,8 @@
           '<div class="tl-time">' + e.display_time + '</div>' +
           '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')"></div>' +
           '<div class="tl-label">' + (e.caption || '(no caption)') +
-          '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span></div>';
+          '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span>' +
+          peopleChips(e.people) + '</div>';
         results.appendChild(row);
 
         if (hasMore) {
@@ -267,6 +305,7 @@
       for (const file of selectedFiles) formData.append('photos', file);
 
       results.innerHTML = '';
+      peopleStrip.hidden = true;
       skipNote.hidden = true;
       setStatus('');
       startProgress();
@@ -295,6 +334,7 @@
           renderSkipNote(data.skipped);
         } else {
           setStatus('');
+          renderPeople(data.people);
           renderEvents(data.events);
           renderSkipNote(data.skipped);
         }

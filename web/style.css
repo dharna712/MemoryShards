@@ -241,7 +241,7 @@
   .pipeline { padding: 0; }
   .pipeline h2 { font-size: 22px; margin-bottom: 6px; }
   .pipeline .section-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; max-width: 64ch; }
-  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; position: relative; }
   .step {
     padding: 16px 18px 16px 0; position: relative; border-radius: 12px;
     transition: transform 0.3s cubic-bezier(.2,.9,.25,1), background 0.3s ease;
@@ -264,7 +264,7 @@
 
   @media (max-width: 760px) {
     .steps { grid-template-columns: 1fr 1fr; row-gap: 24px; }
-    .step:nth-child(2)::after, .step:last-child::after { display: none; }
+    .step:nth-child(even)::after, .step:last-child::after { display: none; }
   }
 
   /* ---------------- TIMELINE (reconstructed proof) ---------------- */
@@ -489,3 +489,20 @@ body:has(.try-page) {
     radial-gradient(700px 500px at 100% 5%, color-mix(in srgb, var(--crack) 7%, transparent), transparent 55%),
     var(--bg);
 }
+
+/* ---------------- PEOPLE (Recognize stage) ---------------- */
+.people-strip { margin: 4px 0 26px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.people-strip[hidden] { display: none; }
+.people-title { font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 14px; }
+.people-row { display: flex; flex-wrap: wrap; gap: 18px; }
+.person-card { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 76px; animation: tl-row-in 0.45s cubic-bezier(.2,.9,.25,1) both; }
+.person-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--memory); box-shadow: var(--shadow); }
+.person-label { font-size: 12.5px; font-weight: 600; }
+.person-meta { font-size: 10.5px; color: var(--text-muted); }
+.tl-people { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tl-person {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px 2px 2px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+  font-size: 11px; color: var(--text-muted);
+}
+.tl-person img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }

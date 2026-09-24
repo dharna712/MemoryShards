@@ -31,6 +31,7 @@ from PIL import Image
 sys.stdout.reconfigure(encoding="utf-8")
 
 from build_timeline import build_timeline
+from recognize_people import recognize_people
 
 app = Flask(__name__)
 CORS(app)  # the frontend is served from a different Render service/domain
@@ -47,7 +48,7 @@ def thumbnail_base64(photo_path):
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-def event_to_json(event):
+def event_to_json(event, photo_to_people):
     thumbnails = [thumbnail_base64(p) for p in event["photos"][:MAX_THUMBNAILS_PER_EVENT]]
     return {
         "start_time": event["start_time"].isoformat(),
@@ -60,6 +61,7 @@ def event_to_json(event):
         "caption": event["caption"],
         "photo_count": event["photo_count"],
         "standalone": event["standalone"],
+        "people": sorted({pid for p in event["photos"] for pid in photo_to_people.get(str(p), [])}),
         "thumbnail": thumbnails[0],
         "thumbnails": thumbnails,
         "more_photos_not_shown": max(0, event["photo_count"] - len(thumbnails)),
@@ -89,11 +91,24 @@ def timeline():
             return jsonify({
                 "events": [],
                 "skipped": skipped,
+                "people": [],
                 "message": "No usable photos — none had both a timestamp and GPS "
                            "location in their EXIF data.",
             })
 
-        return jsonify({"events": [event_to_json(e) for e in events], "skipped": skipped})
+        # Recognition is an enrichment: if it fails (missing checkpoint,
+        # bad image) the timeline is still returned without people.
+        try:
+            people, photo_to_people = recognize_people([p for e in events for p in e["photos"]])
+        except Exception as exc:
+            print(f"[recognize] skipped: {exc}")
+            people, photo_to_people = [], {}
+
+        return jsonify({
+            "events": [event_to_json(e, photo_to_people) for e in events],
+            "skipped": skipped,
+            "people": people,
+        })
 
 
 if __name__ == "__main__":

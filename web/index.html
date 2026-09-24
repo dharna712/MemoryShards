@@ -41,8 +41,8 @@
         <span class="hero-hint mono">click to piece it together</span>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><span class="hero-stat-num">4</span><span class="hero-stat-label">pipeline stages</span></div>
-        <div class="hero-stat"><span class="hero-stat-num">1</span><span class="hero-stat-label">trained model</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">5</span><span class="hero-stat-label">pipeline stages</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">94%</span><span class="hero-stat-label">face match, unseen people</span></div>
         <div class="hero-stat"><span class="hero-stat-num">&lt;20s</span><span class="hero-stat-label">to reconstruct</span></div>
       </div>
     </div>
@@ -90,7 +90,7 @@
 <div class="panel panel-pipeline"><div class="panel-face"><div class="wrap">
   <section class="pipeline" id="pipeline">
     <h2 class="reveal">How the pieces get found</h2>
-    <p class="section-sub">Four stages, each one a real deep-learning or signal-processing step — not just sorting files by date.</p>
+    <p class="section-sub">Five stages, each one a real deep-learning or signal-processing step — not just sorting files by date.</p>
     <div class="steps">
       <div class="step reveal">
         <div class="num mono">1</div>
@@ -104,11 +104,16 @@
       </div>
       <div class="step reveal">
         <div class="num mono">3</div>
+        <h3>Recognize</h3>
+        <p>A FaceNet model we fine-tuned on CelebA groups every face by person: 94% verification accuracy on people it never saw in training.</p>
+      </div>
+      <div class="step reveal">
+        <div class="num mono">4</div>
         <h3>Caption</h3>
         <p>A pretrained vision-language model (BLIP/CLIP) describes what's happening in each event's photos.</p>
       </div>
       <div class="step reveal">
-        <div class="num mono">4</div>
+        <div class="num mono">5</div>
         <h3>Reconstruct</h3>
         <p>Fuse captioned events and parsed notes into one ordered, human-readable timeline.</p>
       </div>

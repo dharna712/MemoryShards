@@ -431,3 +431,16 @@ returned no people.
 - [x] Day 8b — first real-photo run done.
 - [ ] Day 11 — full qualitative demo on own photos with EXIF+GPS (these
       have none) so the timeline and the people strip appear together.
+
+## 2026-09-25 (night) — UI redesign v2 (rated 7.5/10 before this pass)
+
+Studied razorpay.com/buildathon and rebuilt the visual system around one
+idea: the page is a day being reconstructed. Warm near-black + cream +
+amber, Satoshi type with amber payoff words, hero question + giant answer,
+a "no albums / no tagging / just photos in, a day out" scene, the five
+stages as dossiers each carrying a measured "bar", a big-numeral proof
+section (94% / 98.8% / 1) with an honest limits line, a scroll-driven HUD
+clock (08:00 -> 22:00), film grain, paper-style buttons, display footer.
+Try page inherits the system. Sticky panels fall back to normal flow on
+small/short screens so content is never cut off. Notes in
+`Projects/UI ideas.txt` section 6.

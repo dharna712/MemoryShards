@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('memoryshards_theme') || 'light');</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0e0b08">
+<meta name="theme-color" content="#ffffff">
 <meta name="description" content="MemoryShards pieces scattered photos back into the day they came from: EXIF, event clustering, face recognition and captioning, live.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MemoryShards: piece the day back together">
@@ -43,7 +44,7 @@
 </header>
 
 <div class="panel panel-hero"><div class="panel-face">
-  <video class="hero-video" data-src="media/hero-loop.mp4" poster="media/hero-poster.jpg" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
+  <video class="hero-video bg-video" data-sticky data-src="media/hero-loop.mp4" data-src-light="media/hero-loop-light.mp4" data-poster="media/hero-poster.jpg" data-poster-light="media/hero-poster-light.jpg" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>
   <div class="hero-veil" aria-hidden="true"></div>
   <div class="wrap">
   <section class="hero">
@@ -88,7 +89,10 @@
   </section>
 </div></div></div>
 
-<div class="panel panel-refusal"><div class="panel-face"><div class="wrap">
+<div class="panel panel-refusal"><div class="panel-face">
+  <video class="bg-video" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1" data-src="media/scene-frames.mp4" data-src-light="media/scene-frames-light.mp4"></video>
+  <div class="scene-veil" aria-hidden="true"></div>
+  <div class="wrap">
   <section class="refusal">
     <p class="refusal-line reveal">No manual albums.</p>
     <p class="refusal-line reveal">No tagging.</p>
@@ -199,6 +203,8 @@
 
 <div class="wrap above-stack">
   <section class="cta-section">
+    <video class="bg-video" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1" data-src="media/scene-converge.mp4" data-src-light="media/scene-converge-light.mp4"></video>
+    <div class="scene-veil scene-veil--radial" aria-hidden="true"></div>
     <h2 class="reveal">Now try it on <span class="accent">your own photos.</span></h2>
     <p class="section-sub reveal">Upload a few real photos and watch the actual pipeline run &mdash; EXIF extraction, reverse geocoding, event clustering, and captioning &mdash; live, on a dedicated page.</p>
     <a href="try.html" class="cta-link">Try it on your own photos &rarr;</a>
@@ -281,32 +287,6 @@
     window.addEventListener('resize', onScroll);
     update();
   })();
-  // Hero background video: only loaded when it makes sense (dark theme, wide screen,
-  // motion allowed, no data-saver), and paused once the hero is far behind.
-  (function () {
-    const v = document.querySelector('.hero-video');
-    if (!v) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const saveData = navigator.connection && navigator.connection.saveData;
-    const isLight = () => {
-      const t = document.documentElement.getAttribute('data-theme');
-      return t ? t === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
-    };
-    function sync() {
-      const want = !reduce && !saveData && !isLight();
-      if (want && window.scrollY < window.innerHeight * 2) {
-        if (!v.getAttribute('src')) v.src = v.dataset.src;
-        v.play().catch(() => {});
-      } else {
-        v.pause();
-      }
-    }
-    v.addEventListener('playing', () => v.classList.add('is-ready'));
-    new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    window.addEventListener('scroll', sync, { passive: true });
-    sync();
-  })();
-
   // CTA text scramble on hover.
   (function () {
     const a = document.querySelector('.cta-link');

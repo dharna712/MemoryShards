@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('memoryshards_theme') || 'light');</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0e0b08">
+<meta name="theme-color" content="#ffffff">
 <meta name="description" content="Upload a few photos and watch the real pipeline rebuild the timeline: places, captions and who is in each.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Try MemoryShards on your own photos">
@@ -38,6 +39,10 @@
   </div>
 </header>
 
+<div class="page-video" aria-hidden="true">
+  <video class="bg-video" muted loop playsinline preload="none" tabindex="-1" data-src="media/scene-scan.mp4" data-src-light="media/scene-scan-light.mp4"></video>
+</div>
+
 <div class="wrap try-page">
   <div class="page-intro">
     <a href="index.html" class="back-link">&larr; Back to overview</a>
@@ -66,6 +71,10 @@
       <button class="ghost-btn" id="btnSample" type="button">Or try the sample photos</button>
       <span class="demo-filecount mono" id="demoFileCount"></span>
     </div>
+    <label class="opt-online mono">
+      <input type="checkbox" id="onlinePlaces">
+      Finer place names (neighbourhoods): sends each event's coordinates to OpenStreetMap. Off by default.
+    </label>
 
     <div class="demo-progress" id="demoProgress" hidden>
       <span class="demo-spinner"></span>
@@ -130,6 +139,9 @@
     const geoSvg = document.getElementById('geoSvg');
     const sampleCredits = document.getElementById('sampleCredits');
     const btnSample = document.getElementById('btnSample');
+    const onlinePlaces = document.getElementById('onlinePlaces');
+    onlinePlaces.checked = localStorage.getItem('memoryshards_online_places') === '1';
+    onlinePlaces.addEventListener('change', () => localStorage.setItem('memoryshards_online_places', onlinePlaces.checked ? '1' : '0'));
 
     // Managed as our own array rather than relying on input.files directly —
     // FileList is read-only, and we need to remove individual files after
@@ -275,7 +287,25 @@
       results.innerHTML = '';
       emptyState.hidden = events.length > 0;
       events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      const perDay = {};
+      events.forEach((e) => {
+        const day = e.start_time.slice(0, 10);
+        perDay[day] = perDay[day] || { events: 0, photos: 0 };
+        perDay[day].events += 1;
+        perDay[day].photos += e.photo_count;
+      });
+      let lastDay = null;
       events.forEach((e, i) => {
+        const day = e.start_time.slice(0, 10);
+        if (day !== lastDay) {
+          lastDay = day;
+          const head = document.createElement('div');
+          head.className = 'tl-day';
+          const label = new Date(day + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+          const st = perDay[day];
+          head.innerHTML = '<b>' + label + '</b><span class="mono">' + st.events + (st.events === 1 ? ' stop' : ' stops') + ' · ' + st.photos + (st.photos === 1 ? ' photo' : ' photos') + '</span>';
+          results.appendChild(head);
+        }
         const row = document.createElement('div');
         row.className = 'tl-row tl-row-enter';
         row.style.animationDelay = `${Math.min(i, 8) * 60}ms`;
@@ -285,7 +315,7 @@
           ? ` · <button type="button" class="tl-expand">${e.photo_count} photos ▾</button>`
           : '';
         row.innerHTML =
-          '<div class="tl-time">' + e.display_time + '</div>' +
+          '<div class="tl-time">' + e.display_time.split(', ')[1] + '</div>' +
           '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')' + (morphActive ? ';view-transition-name:ev-' + i : '') + '"></div>' +
           '<div class="tl-label">' + (e.caption || '(no caption)') +
           '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span>' +
@@ -339,44 +369,129 @@
       return el;
     }
 
+    const NICE_STEPS = [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30];
+    const NICE_KM = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+
+    // Frames the pins at whatever scale they need: a few km for one neighbourhood,
+    // a region for cities in a state, the world for a multi-country trip. Coastlines
+    // are only drawn once the view is wide enough for them to mean anything; close
+    // pins are pushed apart (with a leader line to the true spot) and labelled.
     async function renderMap(events) {
       const stops = events.map((e, i) => ({ ...e, n: i + 1 })).filter((e) => e.lat != null && e.lon != null);
       if (!stops.length) { geoMap.hidden = true; return; }
-      let rings;
-      try { rings = await loadLand(); } catch (err) { geoMap.hidden = true; return; }
+      let rings = null;
+      try { rings = await loadLand(); } catch (err) { rings = null; }
 
-      const W = 900, H = 450;
+      const W = 900, H = 450, R = 10;
       const lons = stops.map((e) => e.lon), lats = stops.map((e) => e.lat);
-      const minLon = Math.min(...lons), maxLon = Math.max(...lons);
-      const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-      // frame the pins with padding, at least a regional view, 2:1 like the canvas
-      let spanLon = Math.max((maxLon - minLon) * 1.35, 24);
-      let spanLat = Math.max((maxLat - minLat) * 1.35, 12);
-      if (spanLon / spanLat > 2) spanLat = spanLon / 2; else spanLon = spanLat * 2;
-      spanLon = Math.min(spanLon, 360);
-      spanLat = spanLon / 2;
-      const x0 = Math.max(-180, Math.min(180 - spanLon, (minLon + maxLon) / 2 - spanLon / 2));
-      const yTop = Math.min(90, Math.max(-90 + spanLat, (minLat + maxLat) / 2 + spanLat / 2));
-      const px = (lon) => ((lon - x0) / spanLon) * W;
-      const py = (lat) => ((yTop - lat) / spanLat) * H;
+      const lonSpan = Math.max(...lons) - Math.min(...lons);
+      const latSpan = Math.max(...lats) - Math.min(...lats);
+      let cLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+      let cLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+      const wide = lonSpan > 60 || latSpan > 40;
+      const cosf = wide ? 1 : Math.cos((cLat * Math.PI) / 180);
+      let viewX = Math.max(lonSpan * cosf * 1.5, latSpan * 3, 0.03);
+      viewX = Math.min(viewX, 360);
+      if (viewX >= 120) {
+        cLon = Math.max(-180 + viewX / 2, Math.min(180 - viewX / 2, cLon));
+        cLat = Math.max(-90 + viewX / 4, Math.min(90 - viewX / 4, cLat));
+      }
+      const k = W / viewX;
+      const X = (lon) => W / 2 + (lon - cLon) * cosf * k;
+      const Y = (lat) => H / 2 + (cLat - lat) * k;
+      const lonView = viewX / cosf;
 
       geoSvg.replaceChildren();
-      const step = spanLon > 120 ? 30 : spanLon > 50 ? 10 : 5;
-      for (let lo = Math.ceil(x0 / step) * step; lo <= x0 + spanLon; lo += step) {
-        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: px(lo), y1: 0, x2: px(lo), y2: H }));
+
+      const step = NICE_STEPS.find((v) => v >= lonView / 8) || 30;
+      for (let lo = Math.ceil((cLon - lonView / 2) / step) * step; lo <= cLon + lonView / 2; lo += step) {
+        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: X(lo), y1: 0, x2: X(lo), y2: H }));
       }
-      for (let la = Math.ceil((yTop - spanLat) / step) * step; la <= yTop; la += step) {
-        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: 0, y1: py(la), x2: W, y2: py(la) }));
+      for (let la = Math.ceil((cLat - viewX / 4) / step) * step; la <= cLat + viewX / 4; la += step) {
+        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: 0, y1: Y(la), x2: W, y2: Y(la) }));
       }
-      const d = rings.map((r) => 'M' + r.map(([lo, la]) => px(lo).toFixed(1) + ' ' + py(la).toFixed(1)).join('L') + 'Z').join('');
-      geoSvg.appendChild(svgEl('path', { class: 'geo-land', d }));
+      if (rings && lonView > 1.2) {
+        const d = rings.map((r) => 'M' + r.map(([lo, la]) => X(lo).toFixed(1) + ' ' + Y(la).toFixed(1)).join('L') + 'Z').join('');
+        geoSvg.appendChild(svgEl('path', { class: 'geo-land', d }));
+      }
+
+      // scale bar
+      const pxPerKm = k / 111.2;
+      const km = NICE_KM.find((v) => v * pxPerKm >= 90) || 5000;
+      const barW = km * pxPerKm;
+      geoSvg.appendChild(svgEl('line', { class: 'geo-scale', x1: 24, y1: H - 22, x2: 24 + barW, y2: H - 22 }));
+      geoSvg.appendChild(svgEl('line', { class: 'geo-scale', x1: 24, y1: H - 27, x2: 24, y2: H - 17 }));
+      geoSvg.appendChild(svgEl('line', { class: 'geo-scale', x1: 24 + barW, y1: H - 27, x2: 24 + barW, y2: H - 17 }));
+      const scaleLabel = svgEl('text', { class: 'geo-scale-label', x: 24, y: H - 32 });
+      scaleLabel.textContent = km < 1 ? km * 1000 + ' m' : km + ' km';
+      geoSvg.appendChild(scaleLabel);
+
+      // pin positions, then push overlapping pins apart
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      const pts = stops.map((e) => ({ tx: clamp(X(e.lon), R + 2, W - R - 2), ty: clamp(Y(e.lat), R + 2, H - R - 2) }));
+      pts.forEach((p) => { p.x = p.tx; p.y = p.ty; });
+      for (let it = 0; it < 80; it++) {
+        let moved = false;
+        for (let i = 0; i < pts.length; i++) {
+          for (let j = i + 1; j < pts.length; j++) {
+            let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+            let dist = Math.hypot(dx, dy);
+            const min = R * 2.4;
+            if (dist >= min) continue;
+            if (dist < 0.01) { dx = Math.cos(j * 2.4); dy = Math.sin(j * 2.4); dist = 1; }
+            const push = (min - dist) / 2 + 0.1;
+            pts[i].x -= (dx / dist) * push; pts[i].y -= (dy / dist) * push;
+            pts[j].x += (dx / dist) * push; pts[j].y += (dy / dist) * push;
+            moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+      pts.forEach((p) => { p.x = clamp(p.x, R + 2, W - R - 2); p.y = clamp(p.y, R + 2, H - R - 2); });
 
       if (stops.length > 1) {
-        const route = stops.map((e, i) => (i ? 'L' : 'M') + px(e.lon).toFixed(1) + ' ' + py(e.lat).toFixed(1)).join('');
+        const route = pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
         geoSvg.appendChild(svgEl('path', { class: 'geo-route', d: route, pathLength: 100 }));
       }
-      for (const e of stops) {
-        const g = svgEl('g', { class: 'geo-pin', 'data-n': e.n, style: '--i:' + (e.n - 1), transform: 'translate(' + px(e.lon).toFixed(1) + ' ' + py(e.lat).toFixed(1) + ')' });
+      pts.forEach((p) => {
+        if (Math.hypot(p.x - p.tx, p.y - p.ty) > 3) {
+          geoSvg.appendChild(svgEl('line', { class: 'geo-leader', x1: p.tx, y1: p.ty, x2: p.x, y2: p.y }));
+          geoSvg.appendChild(svgEl('circle', { class: 'geo-true', cx: p.tx, cy: p.ty, r: 2.2 }));
+        }
+      });
+
+      // labels: first free spot around each pin (right, left, above, below)
+      const occupied = pts.map((p) => ({ x0: p.x - R - 1, y0: p.y - R - 1, x1: p.x + R + 1, y1: p.y + R + 1 }));
+      const hit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+      const labels = [];
+      if (stops.length <= 16) {
+        stops.forEach((e, i) => {
+          const text = e.place.split(',')[0].replace(/^near /, '~').slice(0, 22);
+          const w = text.length * 6.6 + 6, p = pts[i];
+          const spots = [
+            { x0: p.x + R + 5, y0: p.y - 8, anchor: 'start', tx: p.x + R + 8, w },
+            { x0: p.x - R - 5 - w, y0: p.y - 8, anchor: 'end', tx: p.x - R - 8, w },
+            { x0: p.x - w / 2, y0: p.y - R - 19, anchor: 'middle', tx: p.x, w },
+            { x0: p.x - w / 2, y0: p.y + R + 3, anchor: 'middle', tx: p.x, w },
+          ];
+          for (const sp of spots) {
+            const box = { x0: sp.x0, y0: sp.y0, x1: sp.x0 + w, y1: sp.y0 + 16 };
+            if (box.x0 < 2 || box.x1 > W - 2 || box.y0 < 2 || box.y1 > H - 2) continue;
+            if (occupied.some((o) => hit(box, o))) continue;
+            occupied.push(box);
+            labels.push({ text, x: sp.tx, y: box.y0 + 12, anchor: sp.anchor });
+            break;
+          }
+        });
+      }
+      labels.forEach((l) => {
+        const t = svgEl('text', { class: 'geo-label', x: l.x, y: l.y, 'text-anchor': l.anchor });
+        t.textContent = l.text;
+        geoSvg.appendChild(t);
+      });
+
+      stops.forEach((e, i) => {
+        const g = svgEl('g', { class: 'geo-pin', 'data-n': e.n, style: '--i:' + i, transform: 'translate(' + pts[i].x.toFixed(1) + ' ' + pts[i].y.toFixed(1) + ')' });
         const title = svgEl('title', {});
         title.textContent = e.n + '. ' + e.place;
         g.appendChild(title);
@@ -386,7 +501,7 @@
         num.textContent = e.n;
         g.appendChild(num);
         geoSvg.appendChild(g);
-      }
+      });
       geoMap.hidden = false;
 
       // hovering a timeline row lights its pin
@@ -457,6 +572,7 @@
 
       const formData = new FormData();
       for (const file of selectedFiles) formData.append('photos', file);
+      if (onlinePlaces.checked) formData.append('online_places', '1');
 
       results.innerHTML = '';
       peopleStrip.hidden = true;

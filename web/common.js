@@ -1,16 +1,12 @@
 // Shared across index.html and try.html: theme toggle, scroll reveals,
 // and the header's docked/undocked state.
 
-  // Theme toggle: persists the visitor's choice; falls back to OS preference
-  // when they've never overridden it (no localStorage entry yet).
+  // Theme toggle. The theme itself is set by a tiny script in each page's <head>
+  // (white by default) so there is no flash of the wrong theme.
   (function () {
     const toggle = document.getElementById('themeToggle');
-    const saved = localStorage.getItem('memoryshards_theme');
-    if (saved) document.documentElement.setAttribute('data-theme', saved);
     toggle.addEventListener('click', () => {
-      const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-      const current = document.documentElement.getAttribute('data-theme') || (prefersLight ? 'light' : 'dark');
-      const next = current === 'light' ? 'dark' : 'light';
+      const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
       localStorage.setItem('memoryshards_theme', next);
     });
@@ -61,4 +57,38 @@
     });
     el.addEventListener('pointerleave', () => { el.style.translate = ''; });
   });
+})();
+
+// Background videos: <video class="bg-video" data-src data-src-light>. The file is chosen by
+// theme, it only plays while on screen (or, for the sticky hero, while near the top), and it
+// stays off entirely for reduced-motion and data-saver.
+(function () {
+  const vids = document.querySelectorAll('video.bg-video');
+  if (!vids.length) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (navigator.connection && navigator.connection.saveData) return;
+  const isLight = () => document.documentElement.getAttribute('data-theme') === 'light';
+  const visible = new Set();
+
+  function sync(v) {
+    const src = isLight() ? v.dataset.srcLight : v.dataset.src;
+    if (v.getAttribute('src') !== src) {
+      v.classList.remove('is-ready');
+      if (v.dataset.poster) v.poster = isLight() ? v.dataset.posterLight : v.dataset.poster;
+      v.src = src;
+    }
+    const farBelow = v.hasAttribute('data-sticky') && window.scrollY > window.innerHeight * 2;
+    if (visible.has(v) && !farBelow) v.play().catch(() => {}); else v.pause();
+  }
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) visible.add(e.target); else visible.delete(e.target); sync(e.target); });
+  }, { rootMargin: '200px' });
+  vids.forEach((v) => {
+    v.addEventListener('playing', () => v.classList.add('is-ready'));
+    io.observe(v);
+    if (v.hasAttribute('data-sticky')) { visible.add(v); sync(v); } // the hero is on screen from the first frame
+  });
+  new MutationObserver(() => vids.forEach(sync)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('scroll', () => vids.forEach((v) => { if (v.hasAttribute('data-sticky')) sync(v); }), { passive: true });
 })();

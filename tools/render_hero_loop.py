@@ -7,11 +7,13 @@ field. Every moving element uses whole-number cycles over the loop length, so
 the last frame flows straight into the first.
 
 Usage:
-    python tools/render_hero_loop.py
+    python tools/render_hero_loop.py           # dark: hero-loop.mp4 + hero-poster.jpg
+    python tools/render_hero_loop.py --light   # white: hero-loop-light.mp4 + hero-poster-light.jpg
 Needs numpy, Pillow and ffmpeg on PATH.
 """
 
 import math
+import sys
 import shutil
 import subprocess
 import tempfile
@@ -26,10 +28,21 @@ SECONDS = 10
 FRAMES = FPS * SECONDS
 OUT_DIR = Path(__file__).resolve().parent.parent / "web" / "media"
 
-BG = np.array([14, 11, 8], dtype=np.float32)
-AMBER = (217, 163, 83)
-CREAM = (240, 231, 214)
-CRACK = (191, 228, 255)
+LIGHT = "--light" in sys.argv
+if LIGHT:
+    BG = np.array([252, 250, 246], dtype=np.float32)
+    AMBER = (196, 122, 24)
+    CREAM = (23, 19, 14)     # shard/frame ink on white
+    CRACK = (42, 106, 153)
+    VIGNETTE, LEAK_GAIN, FILL_GAIN, EDGE_GAIN, DUST_GAIN = 0.10, 0.9, 1.1, 1.6, 0.9
+    SUFFIX = "-light"
+else:
+    BG = np.array([14, 11, 8], dtype=np.float32)
+    AMBER = (217, 163, 83)
+    CREAM = (240, 231, 214)
+    CRACK = (191, 228, 255)
+    VIGNETTE, LEAK_GAIN, FILL_GAIN, EDGE_GAIN, DUST_GAIN = 0.55, 1.0, 1.0, 1.0, 1.0
+    SUFFIX = ""
 
 rng = np.random.default_rng(7)
 TAU = math.tau
@@ -48,9 +61,9 @@ def radial_blob(radius, color, strength):
 
 LEAKS = [
     # (blob image, centre x, centre y, orbit rx, orbit ry, phase, cycles)
-    (radial_blob(520, AMBER, 0.16), 300, 220, 140, 80, 0.0, 1),
-    (radial_blob(420, (255, 190, 120), 0.10), 1000, 520, 120, 100, 2.1, 1),
-    (radial_blob(360, CRACK, 0.05), 1100, 160, 90, 60, 4.0, 2),
+    (radial_blob(520, AMBER, 0.16 * LEAK_GAIN), 300, 220, 140, 80, 0.0, 1),
+    (radial_blob(420, (255, 190, 120) if not LIGHT else (240, 150, 60), 0.10 * LEAK_GAIN), 1000, 520, 120, 100, 2.1, 1),
+    (radial_blob(360, CRACK, 0.05 * LEAK_GAIN), 1100, 160, 90, 60, 4.0, 2),
 ]
 
 SHARDS = []
@@ -80,7 +93,7 @@ DUST = [(rng.uniform(0, W), rng.uniform(0, H), rng.uniform(0.8, 2.2), int(rng.in
          rng.uniform(0.15, 0.5), rng.uniform(0, TAU)) for _ in range(70)]
 
 y_idx, x_idx = np.mgrid[0:H, 0:W].astype(np.float32)
-vignette = 1 - 0.55 * np.clip(np.sqrt(((x_idx - W / 2) / (W / 2)) ** 2 + ((y_idx - H / 2) / (H / 2)) ** 2) - 0.35, 0, 1)
+vignette = 1 - VIGNETTE * np.clip(np.sqrt(((x_idx - W / 2) / (W / 2)) ** 2 + ((y_idx - H / 2) / (H / 2)) ** 2) - 0.35, 0, 1)
 base = np.clip(BG[None, None, :] * vignette[..., None], 0, 255)
 
 
@@ -100,8 +113,8 @@ def draw_frame(f):
         oy = s["ay"] * math.sin(TAU * s["cycles"] * t + s["phase"]) * (0.5 + s["depth"])
         rot = s["spin"] * math.sin(TAU * t + s["phase"])
         poly = [(s["cx"] + ox + rad * math.cos(a + rot), s["cy"] + oy + rad * math.sin(a + rot)) for a, rad in s["pts"]]
-        d.polygon(poly, fill=CREAM + (int(255 * s["fill"]),))
-        d.line(poly + [poly[0]], fill=s["edge"] + (int(255 * (0.10 + 0.14 * s["depth"])),), width=1)
+        d.polygon(poly, fill=CREAM + (int(255 * s["fill"] * FILL_GAIN),))
+        d.line(poly + [poly[0]], fill=s["edge"] + (min(255, int(255 * (0.10 + 0.14 * s["depth"]) * EDGE_GAIN)),), width=1)
 
     for fr in FRAMES_OUTLINES:
         ox = fr["ax"] * math.cos(TAU * fr["cycles"] * t + fr["phase"])
@@ -111,13 +124,13 @@ def draw_frame(f):
         for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
             dx, dy = sx * fr["w"] / 2, sy * fr["h"] / 2
             corners.append((fr["cx"] + ox + dx * c - dy * s_, fr["cy"] + oy + dx * s_ + dy * c))
-        d.polygon(corners, fill=CREAM + (7,))
-        d.line(corners + [corners[0]], fill=CREAM + (34,), width=1)
+        d.polygon(corners, fill=CREAM + (int(7 * FILL_GAIN),))
+        d.line(corners + [corners[0]], fill=CREAM + (int(34 * EDGE_GAIN),), width=1)
 
     for x0, y0, r, laps, alpha, ph in DUST:
         y = (y0 - laps * H * t) % H
         x = x0 + 14 * math.sin(TAU * t + ph)
-        a = int(255 * alpha * (0.6 + 0.4 * math.sin(TAU * 2 * t + ph)))
+        a = int(255 * alpha * DUST_GAIN * (0.6 + 0.4 * math.sin(TAU * 2 * t + ph)))
         d.ellipse([x - r, y - r, x + r, y + r], fill=AMBER + (a,))
 
     img.alpha_composite(layer.filter(ImageFilter.GaussianBlur(0.6)))
@@ -132,15 +145,15 @@ def main():
     try:
         for f in range(FRAMES):
             draw_frame(f).save(tmp / f"f{f:04d}.png")
-        draw_frame(FRAMES // 4).save(OUT_DIR / "hero-poster.jpg", quality=82)
+        draw_frame(FRAMES // 4).save(OUT_DIR / f"hero-poster{SUFFIX}.jpg", quality=82)
         subprocess.run([
             "ffmpeg", "-y", "-loglevel", "error", "-framerate", str(FPS), "-i", str(tmp / "f%04d.png"),
             "-c:v", "libx264", "-preset", "slow", "-crf", "29", "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart", "-an", str(OUT_DIR / "hero-loop.mp4"),
+            "-movflags", "+faststart", "-an", str(OUT_DIR / f"hero-loop{SUFFIX}.mp4"),
         ], check=True)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    print("wrote", OUT_DIR / "hero-loop.mp4")
+    print("wrote", OUT_DIR / f"hero-loop{SUFFIX}.mp4")
 
 
 if __name__ == "__main__":

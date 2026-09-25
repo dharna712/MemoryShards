@@ -16,6 +16,7 @@ from pathlib import Path
 from cluster_events import cluster_events
 from caption_events import caption_event
 from extract_metadata import extract_photo_metadata
+from places import place_label
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
@@ -27,7 +28,7 @@ def find_photos(photos_dir):
     )
 
 
-def build_timeline(photos_dir, caption=True):
+def build_timeline(photos_dir, caption=True, online_places=False):
     """Returns (timeline, skipped) where:
     - timeline: list of events, sorted chronologically —
       [{'start_time': datetime, 'place': str, 'caption': str|None,
@@ -77,14 +78,16 @@ def build_timeline(photos_dir, caption=True):
     timeline = []
     for cluster_id, items in events_by_cluster.items():
         items = sorted(items, key=lambda r: r["timestamp"])
+        lat = sum(r["lat"] for r in items) / len(items)
+        lon = sum(r["lon"] for r in items) / len(items)
         event_caption = None
         if caption:
             event_caption = caption_event([r["path"] for r in items])
         timeline.append({
             "start_time": items[0]["timestamp"],
-            "place": items[0]["place"],
-            "lat": items[0]["lat"],
-            "lon": items[0]["lon"],
+            "place": place_label(lat, lon, online_places),
+            "lat": lat,
+            "lon": lon,
             "caption": event_caption,
             "photo_count": len(items),
             "photos": [r["path"] for r in items],

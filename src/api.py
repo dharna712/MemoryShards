@@ -90,7 +90,8 @@ def timeline():
             if f.filename:
                 f.save(tmp_path / f.filename)
 
-        events, skipped = build_timeline(tmp_path, caption=True)
+        online_places = request.form.get("online_places") == "1"
+        events, skipped = build_timeline(tmp_path, caption=True, online_places=online_places)
 
         if not events:
             return jsonify({

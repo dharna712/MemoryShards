@@ -485,3 +485,32 @@ its pin. The view frames the pins (world view for the samples, a regional view
 for a single trip). The API now returns each event's lat/lon. No map service
 or tiles are involved. Date column in the timeline widened so dates no longer
 wrap.
+
+## 2026-09-25 (night) — Nearby places, white theme, more videos
+
+**"Will it be messy when photos are close?"** Simulated six trips (Pune
+neighbourhoods 6-10 km apart, a short walk, a dense market, a same-state trip,
+a six-state trip, same place morning and evening). Event clustering came out
+right in every case, so the problems were around it:
+- Place names: the offline geocoder only knows the nearest listed *town*, so
+  neighbourhoods came back wrong (Baner -> "Khadki", Gateway of India -> "Uran",
+  30 km away). New `src/places.py` checks the distance to that town and hedges
+  ("near Khadki", or just the region when nothing is close). Optional, off by
+  default: OpenStreetMap Nominatim for suburb-level names ("Baner, Pune"); it
+  sends each event's coordinates to a third party, so the try page has an
+  explicit checkbox. Event location is now the centroid of its photos.
+- Map: adapts to scale (local grid + scale bar for one neighbourhood, coastlines
+  from ~1 degree up, world view for multi-country trips), pushes overlapping pins
+  apart with a leader line to the true spot, and labels them.
+- Timeline: grouped by day with a stops/photos summary; rows show the time only.
+
+**White theme is now the default** (pure white, ink-black buttons, darker amber,
+soft card shadows), with the dark theme one click away. The code that followed
+the OS colour scheme was removed as dead. Hero loop rendered in a white variant.
+
+**More videos** (all original artwork, 150-290 KB each, dark and white
+versions, rendered by `tools/render_scene_loops.py`): a scan sweeping across
+photo frames (try page), shards assembling into a cracked photograph (closing
+call to action), contact-sheet film strips ("No manual albums" scene). One
+shared loader in `common.js` picks the file by theme, plays only while on
+screen, and stays off for reduced-motion and data-saver.

@@ -57,7 +57,7 @@
     padding-top: 22px; padding-bottom: 22px; flex-wrap: wrap; gap: 14px;
   }
   header.top.is-scrolled { border-bottom-color: var(--border); }
-  .wordmark { font-family: 'Satoshi', sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -0.01em; }
+  .wordmark { font-family: 'Satoshi', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
   .wordmark span { color: var(--memory); }
   .top-nav { display: flex; align-items: center; gap: 24px; }
   .top-nav a {
@@ -93,7 +93,7 @@
     align-items: center;
     padding: 28px 0 64px;
   }
-  .hero-copy p { color: var(--text-muted); font-size: 15.5px; max-width: 46ch; margin-bottom: 26px; }
+  .hero-copy p { color: var(--text); opacity: 0.82; font-size: 17px; font-weight: 500; line-height: 1.55; max-width: 36ch; margin-bottom: 26px; }
   .hero-actions { display: flex; align-items: center; gap: 14px; }
   button.primary {
     all: unset; cursor: pointer; font-family: 'Satoshi', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.01em;
@@ -270,7 +270,7 @@
   .live-demo-section h2 { font-size: 22px; margin-bottom: 6px; }
   .live-demo-section .section-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 26px; max-width: 64ch; }
   .dropzone {
-    position: relative; border: 1.5px dashed var(--border); border-radius: 12px;
+    position: relative; border: 1.5px dashed color-mix(in srgb, var(--text) 38%, transparent); border-radius: 12px;
     padding: 28px; margin-bottom: 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
     background: var(--surface);
   }
@@ -642,7 +642,7 @@ header.top { view-transition-name: site-header; }
 /* ================= results map + sample button ================= */
 .ghost-btn {
   all: unset; cursor: pointer; font-family: 'Satoshi', sans-serif; font-size: 14px; font-weight: 700;
-  padding: 12px 20px; border: 1px solid var(--border); border-radius: 6px; color: var(--text);
+  padding: 12px 20px; border: 1.5px solid color-mix(in srgb, var(--text) 45%, transparent); border-radius: 6px; color: var(--text);
   transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease);
 }
 .ghost-btn:hover:not(:disabled) { border-color: var(--memory); color: var(--memory); transform: translateY(-2px); }
@@ -683,7 +683,7 @@ header.top { view-transition-name: site-header; }
 .geo-leader { stroke: var(--memory); stroke-width: 1; opacity: 0.6; }
 .geo-true { fill: var(--memory); opacity: 0.8; }
 .geo-label { fill: var(--text); font: 700 11.5px 'Satoshi', sans-serif; paint-order: stroke; stroke: var(--surface); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }
-.opt-online { display: flex; align-items: flex-start; gap: 9px; margin: 0 0 18px; font-size: 11px; line-height: 1.5; color: var(--text-muted); cursor: pointer; max-width: 62ch; }
+.opt-online { display: flex; align-items: flex-start; gap: 9px; margin: 0 0 18px; font-size: 13px; line-height: 1.5; color: var(--text); cursor: pointer; max-width: 62ch; }
 .opt-online input { margin-top: 2px; accent-color: var(--memory); }
 
 
@@ -710,3 +710,7 @@ header.top { view-transition-name: site-header; }
 .page-video { position: absolute; top: 0; left: 0; right: 0; height: 680px; z-index: 0; overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%); mask-image: linear-gradient(180deg, #000 45%, transparent 100%); }
 .wrap.try-page { position: relative; z-index: 2; }
 body:has(.page-video) { position: relative; }
+
+.run-summary { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: baseline; margin: 0 0 22px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: var(--card-shadow); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); }
+.run-summary b { font: 800 26px 'Satoshi', sans-serif; letter-spacing: -0.03em; color: var(--text); margin-right: 6px; }
+.run-summary b:first-child { color: var(--memory); }

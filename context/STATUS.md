@@ -517,3 +517,6 @@ screen, and stays off for reduced-motion and data-saver.
 
 ## Accessibility pass
 Lighthouse (desktop): perf 85/91, a11y 93, best-practices 100, SEO 100. Fixed the two a11y failures (low-contrast amber/muted text on white, missing main landmark); a11y now 100 locally.
+
+## UI polish pass
+Stronger hero subheadline, larger wordmark, darker dropzone/ghost-button borders and option label on the try page, results summary strip (photos/events/people) with auto-scroll after a run.

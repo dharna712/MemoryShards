@@ -612,9 +612,15 @@
             document.querySelectorAll('.preview-thumb').forEach(t => { t.style.viewTransitionName = ''; });
             renderPeople(data.people);
             renderEvents(data.events);
+            const nPhotos = data.events.reduce((n, e) => n + ((e.filenames || []).length || 1), 0);
+            const nPeople = (data.people || []).length;
+            const sum = document.createElement('div');
+            sum.className = 'run-summary';
+            sum.innerHTML = `<span><b>${nPhotos}</b>photos</span><span><b>${data.events.length}</b>events</span><span><b>${nPeople}</b>${nPeople === 1 ? 'person' : 'people'}</span>`;
+            results.prepend(sum);
             renderSkipNote(data.skipped);
           };
-          const showExtras = () => { renderMap(data.events); renderCredits(); };
+          const showExtras = () => { renderMap(data.events); renderCredits(); results.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
           const canMorph = document.startViewTransition &&
             !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
           if (canMorph) {

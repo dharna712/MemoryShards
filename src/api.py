@@ -34,7 +34,9 @@ from build_timeline import build_timeline
 from recognize_people import recognize_people
 
 app = Flask(__name__)
-CORS(app)  # the frontend is served from a different Render service/domain
+# The page may be served from another origin (or a public https site calling this
+# localhost API), so allow cross-origin and Chrome's private-network preflight.
+CORS(app, allow_private_network=True)
 
 THUMBNAIL_SIZE = (240, 240)
 MAX_THUMBNAILS_PER_EVENT = 8  # caps payload size for events with many photos

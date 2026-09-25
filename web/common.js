@@ -51,7 +51,7 @@
 
 // Magnetic buttons: primary controls lean a few pixels toward the pointer.
 (function () {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !window.matchMedia('(hover: hover)').matches) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   document.querySelectorAll('button.primary, .cta-link').forEach((el) => {
     el.addEventListener('pointermove', (e) => {
       const r = el.getBoundingClientRect();

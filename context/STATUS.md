@@ -456,3 +456,18 @@ API now returns each event's filenames). Found and fixed a real mobile bug:
 neither page had a viewport meta tag, so phones would have rendered the desktop
 layout shrunk. Also added share metadata (description, theme-color, OG tags)
 and a one-row header on phones.
+
+## 2026-09-25 (late) — Laptop-only cleanup
+
+The demo is shown on a laptop only, so all phone support was removed: every
+`max-width` media query, the `hover: hover` and `innerWidth` guards in JS, and
+the one-row mobile header. Kept: a `max-height: 720px` fallback that turns the
+sticky panels into normal flow on short laptop screens so content never gets
+cut off. Also removed dead code: unused CSS (old hero stats, the pre-dossier
+pipeline steps), the Render-only `build.sh` and `gunicorn`, an empty tracked
+file, two `.gitkeep`s, and the fallback URL to a hosted API that no longer
+exists. The try page now defaults to `http://localhost:5000` (the backend runs
+on the demo laptop; `?api=` still overrides), and the API answers Chrome's
+private-network preflight so the deployed https page can call it.
+`cluster_own_photos.py` is now a thin CLI over `recognize_people.py` instead of
+a second, older copy of the logic. Setup and run steps are in README.md.

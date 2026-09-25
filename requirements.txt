@@ -2,21 +2,8 @@
 # src/smoke_test_face_model.py and src/smoke_test_celeba_triplets.py
 # on 2026-09-20
 #
-# torch/torchvision and facenet-pytorch are NOT listed here on purpose —
-# see build.sh. Plain `pip install torch` pulls the CUDA-enabled build
-# (nvidia-cublas, cuda-toolkit, triton, etc.), which loads a pile of GPU
-# runtime libraries into memory the moment torch is imported even though
-# this deploys to a CPU-only free-tier box — real cause of a 512MB RAM
-# ceiling being hit before the server ever finished booting. build.sh
-# installs the CPU-only wheel from PyTorch's own index instead.
-#
-# facenet-pytorch==2.6.0's published metadata separately pins
-# numpy<2.0.0, Pillow<10.3.0, torch<2.3.0, torchvision<0.18.0 — badly
-# outdated ranges that conflict with what transformers/datasets need
-# here. Its actual runtime code works fine against modern versions; only
-# its stale declared metadata doesn't. Installed with --no-deps in
-# build.sh so pip's resolver never sees those stale constraints — same
-# as the local setup.
+# torch, torchvision and facenet-pytorch are installed separately, see README.md
+# (facenet-pytorch's published metadata pins outdated numpy/Pillow/torch ranges).
 pillow>=11
 numpy>=2
 requests>=2.32
@@ -36,4 +23,3 @@ transformers>=5.14
 # src/api.py on 2026-09-21
 flask>=3.1
 flask-cors>=6.0
-gunicorn>=26.0   # production WSGI server for deployment (Render)

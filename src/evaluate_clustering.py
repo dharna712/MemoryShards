@@ -23,15 +23,20 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import numpy as np
 import torch
-from facenet_pytorch import MTCNN
+from facenet_pytorch import MTCNN, InceptionResnetV1
 from PIL import Image
 from sklearn.cluster import AgglomerativeClustering, DBSCAN
 from sklearn.metrics import adjusted_rand_score
 
-from cluster_own_photos import build_model
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HELD_OUT_DIR = REPO_ROOT / "data" / "raw" / "celeba_holdout"
+
+
+def build_model(checkpoint_path, device):
+    model = InceptionResnetV1(pretrained="vggface2", classify=False).to(device)
+    model.load_state_dict(torch.load(checkpoint_path, map_location=device)["model_state_dict"])
+    return model.eval()
 
 
 def embed_holdout(checkpoint, min_photos, device):

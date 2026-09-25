@@ -224,7 +224,7 @@
 <div class="wrap above-stack">
   <footer>
     <div class="footer-top">
-      <div class="footer-word">MemoryShards<span> /reconstruct</span></div>
+      <div class="footer-word">Memory<span>Shards</span></div>
       <a href="#" class="back-to-top">Back to top ↑</a>
     </div>
     <div class="credits-label">Reference photo sources</div>
@@ -293,7 +293,7 @@
       return t ? t === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
     };
     function sync() {
-      const want = !reduce && !saveData && window.innerWidth > 820 && !isLight();
+      const want = !reduce && !saveData && !isLight();
       if (want && window.scrollY < window.innerHeight * 2) {
         if (!v.getAttribute('src')) v.src = v.dataset.src;
         v.play().catch(() => {});
@@ -303,7 +303,6 @@
     }
     v.addEventListener('playing', () => v.classList.add('is-ready'));
     new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    window.addEventListener('resize', sync);
     window.addEventListener('scroll', sync, { passive: true });
     sync();
   })();
@@ -330,7 +329,7 @@
 
   // Cursor-reactive hero (tilts the shard image, drifts the video) and spotlight on stage cards.
   (function () {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !window.matchMedia('(hover: hover)').matches) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const face = document.querySelector('.panel-hero .panel-face');
     const stageEl = document.getElementById('shatterStage');
     const video = face.querySelector('.hero-video');

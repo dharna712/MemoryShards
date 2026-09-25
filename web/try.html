@@ -63,6 +63,7 @@
 
     <div class="live-demo-controls">
       <button class="primary" id="btnRunDemo" disabled>Reconstruct my timeline</button>
+      <button class="ghost-btn" id="btnSample" type="button">Or try the sample photos</button>
       <span class="demo-filecount mono" id="demoFileCount"></span>
     </div>
 
@@ -75,7 +76,11 @@
     <div class="demo-skip-note mono" id="demoSkipNote" hidden></div>
 
     <div class="people-strip" id="peopleStrip" hidden></div>
+    <div class="geo-map" id="geoMap" hidden>
+      <svg id="geoSvg" viewBox="0 0 900 450" role="img" aria-label="Map of where the photos were taken"></svg>
+    </div>
     <div class="tl" id="demoResults"></div>
+    <p class="sample-credits mono" id="sampleCredits" hidden></p>
     <p class="demo-empty mono" id="demoEmpty">No results yet — add photos above and hit Reconstruct.</p>
   </section>
 </div>
@@ -121,6 +126,10 @@
     const results = document.getElementById('demoResults');
     const emptyState = document.getElementById('demoEmpty');
     const peopleStrip = document.getElementById('peopleStrip');
+    const geoMap = document.getElementById('geoMap');
+    const geoSvg = document.getElementById('geoSvg');
+    const sampleCredits = document.getElementById('sampleCredits');
+    const btnSample = document.getElementById('btnSample');
 
     // Managed as our own array rather than relying on input.files directly —
     // FileList is read-only, and we need to remove individual files after
@@ -307,6 +316,139 @@
       });
     }
 
+    // ---- results map: coastlines (Natural Earth, public domain) + one pin per event ----
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    let landRings = null;
+
+    async function loadLand() {
+      if (landRings) return landRings;
+      const flat = await (await fetch('media/land.json')).json();
+      landRings = flat.map((f) => {
+        const pts = [];
+        let x = f[0], y = f[1];
+        pts.push([x / 10, y / 10]);
+        for (let i = 2; i < f.length; i += 2) { x += f[i]; y += f[i + 1]; pts.push([x / 10, y / 10]); }
+        return pts;
+      });
+      return landRings;
+    }
+
+    function svgEl(name, attrs) {
+      const el = document.createElementNS(SVG_NS, name);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      return el;
+    }
+
+    async function renderMap(events) {
+      const stops = events.map((e, i) => ({ ...e, n: i + 1 })).filter((e) => e.lat != null && e.lon != null);
+      if (!stops.length) { geoMap.hidden = true; return; }
+      let rings;
+      try { rings = await loadLand(); } catch (err) { geoMap.hidden = true; return; }
+
+      const W = 900, H = 450;
+      const lons = stops.map((e) => e.lon), lats = stops.map((e) => e.lat);
+      const minLon = Math.min(...lons), maxLon = Math.max(...lons);
+      const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+      // frame the pins with padding, at least a regional view, 2:1 like the canvas
+      let spanLon = Math.max((maxLon - minLon) * 1.35, 24);
+      let spanLat = Math.max((maxLat - minLat) * 1.35, 12);
+      if (spanLon / spanLat > 2) spanLat = spanLon / 2; else spanLon = spanLat * 2;
+      spanLon = Math.min(spanLon, 360);
+      spanLat = spanLon / 2;
+      const x0 = Math.max(-180, Math.min(180 - spanLon, (minLon + maxLon) / 2 - spanLon / 2));
+      const yTop = Math.min(90, Math.max(-90 + spanLat, (minLat + maxLat) / 2 + spanLat / 2));
+      const px = (lon) => ((lon - x0) / spanLon) * W;
+      const py = (lat) => ((yTop - lat) / spanLat) * H;
+
+      geoSvg.replaceChildren();
+      const step = spanLon > 120 ? 30 : spanLon > 50 ? 10 : 5;
+      for (let lo = Math.ceil(x0 / step) * step; lo <= x0 + spanLon; lo += step) {
+        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: px(lo), y1: 0, x2: px(lo), y2: H }));
+      }
+      for (let la = Math.ceil((yTop - spanLat) / step) * step; la <= yTop; la += step) {
+        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: 0, y1: py(la), x2: W, y2: py(la) }));
+      }
+      const d = rings.map((r) => 'M' + r.map(([lo, la]) => px(lo).toFixed(1) + ' ' + py(la).toFixed(1)).join('L') + 'Z').join('');
+      geoSvg.appendChild(svgEl('path', { class: 'geo-land', d }));
+
+      if (stops.length > 1) {
+        const route = stops.map((e, i) => (i ? 'L' : 'M') + px(e.lon).toFixed(1) + ' ' + py(e.lat).toFixed(1)).join('');
+        geoSvg.appendChild(svgEl('path', { class: 'geo-route', d: route, pathLength: 100 }));
+      }
+      for (const e of stops) {
+        const g = svgEl('g', { class: 'geo-pin', 'data-n': e.n, style: '--i:' + (e.n - 1), transform: 'translate(' + px(e.lon).toFixed(1) + ' ' + py(e.lat).toFixed(1) + ')' });
+        const title = svgEl('title', {});
+        title.textContent = e.n + '. ' + e.place;
+        g.appendChild(title);
+        g.appendChild(svgEl('circle', { class: 'geo-pulse', r: 9 }));
+        g.appendChild(svgEl('circle', { class: 'geo-dot', r: 8 }));
+        const num = svgEl('text', { class: 'geo-num', y: 3.6, 'text-anchor': 'middle' });
+        num.textContent = e.n;
+        g.appendChild(num);
+        geoSvg.appendChild(g);
+      }
+      geoMap.hidden = false;
+
+      // hovering a timeline row lights its pin
+      results.querySelectorAll('.tl-row').forEach((row, i) => {
+        row.addEventListener('mouseenter', () => geoSvg.querySelector('.geo-pin[data-n="' + (i + 1) + '"]')?.classList.add('is-active'));
+        row.addEventListener('mouseleave', () => geoSvg.querySelector('.geo-pin[data-n="' + (i + 1) + '"]')?.classList.remove('is-active'));
+      });
+    }
+
+    // ---- sample photos (Wikimedia Commons, CC-licensed) and their credits ----
+    let creditsByFile = null;
+
+    async function loadCredits() {
+      if (!creditsByFile) {
+        const list = await (await fetch('samples/credits.json')).json();
+        creditsByFile = Object.fromEntries(list.map((c) => [c.file, c]));
+      }
+      return creditsByFile;
+    }
+
+    async function renderCredits() {
+      sampleCredits.hidden = true;
+      if (!selectedFiles.length) return;
+      let credits;
+      try { credits = await loadCredits(); } catch (err) { return; }
+      if (!selectedFiles.every((f) => credits[f.name])) return;
+      const seen = new Map();
+      selectedFiles.forEach((f) => { const c = credits[f.name]; seen.set(c.author + '|' + c.license, c); });
+      sampleCredits.replaceChildren(document.createTextNode('Sample photos via Wikimedia Commons, resized: '));
+      let first = true;
+      for (const c of seen.values()) {
+        if (!first) sampleCredits.appendChild(document.createTextNode(' · '));
+        first = false;
+        sampleCredits.appendChild(document.createTextNode(c.author + ' '));
+        const a = document.createElement('a');
+        a.href = c.license_url || c.page;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = c.license;
+        sampleCredits.appendChild(a);
+      }
+      sampleCredits.hidden = false;
+    }
+
+    btnSample.addEventListener('click', async () => {
+      btnSample.disabled = true;
+      try {
+        const credits = await loadCredits();
+        const files = await Promise.all(Object.keys(credits).map(async (name) => {
+          const blob = await (await fetch('samples/' + name)).blob();
+          return new File([blob], name, { type: 'image/jpeg' });
+        }));
+        selectedFiles = [];
+        addFiles(files);
+        btn.click();
+      } catch (err) {
+        setStatus('Could not load the sample photos.', true);
+      } finally {
+        btnSample.disabled = false;
+      }
+    });
+
     btn.addEventListener('click', async () => {
       if (!selectedFiles.length) {
         setStatus('Add a few photos first.', true);
@@ -318,6 +460,8 @@
 
       results.innerHTML = '';
       peopleStrip.hidden = true;
+      geoMap.hidden = true;
+      sampleCredits.hidden = true;
       skipNote.hidden = true;
       setStatus('');
       startProgress();
@@ -352,6 +496,7 @@
             renderEvents(data.events);
             renderSkipNote(data.skipped);
           };
+          const showExtras = () => { renderMap(data.events); renderCredits(); };
           const canMorph = document.startViewTransition &&
             !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
           if (canMorph) {
@@ -370,9 +515,11 @@
               morphActive = false;
               results.classList.remove('morphing');
               document.querySelectorAll('.tl-thumb').forEach(t => { t.style.viewTransitionName = ''; });
+              showExtras();
             });
           } else {
             apply();
+            showExtras();
           }
         }
       } catch (err) {

@@ -60,6 +60,8 @@ def event_to_json(event, photo_to_people):
         # spans 2009-2019)
         "display_time": event["start_time"].strftime("%d %b %Y, %I:%M %p"),
         "place": event["place"],
+        "lat": event["lat"],
+        "lon": event["lon"],
         "caption": event["caption"],
         "photo_count": event["photo_count"],
         "standalone": event["standalone"],

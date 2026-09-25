@@ -471,3 +471,17 @@ on the demo laptop; `?api=` still overrides), and the API answers Chrome's
 private-network preflight so the deployed https page can call it.
 `cluster_own_photos.py` is now a thin CLI over `recognize_people.py` instead of
 a second, older copy of the logic. Setup and run steps are in README.md.
+
+## 2026-09-25 (late) — Sample-photos button and results map
+
+Try page: "Or try the sample photos" loads 11 CC-licensed geotagged Wikimedia
+Commons photos (`web/samples/`, with `credits.json`) and runs the real pipeline
+on them in one click, so the demo needs no uploads and works as a fallback.
+The authors and licences (CC BY, BY-SA, CC0) are shown under the results.
+Results also gain a map: coastlines from Natural Earth (public domain, 27 KB,
+`web/media/land.json`, built by `tools/make_land.py`) with one numbered pin per
+event, connected in time order and animated in; hovering a timeline row lights
+its pin. The view frames the pins (world view for the samples, a regional view
+for a single trip). The API now returns each event's lat/lon. No map service
+or tiles are involved. Date column in the timeline widened so dates no longer
+wrap.

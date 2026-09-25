@@ -83,6 +83,8 @@ def build_timeline(photos_dir, caption=True):
         timeline.append({
             "start_time": items[0]["timestamp"],
             "place": items[0]["place"],
+            "lat": items[0]["lat"],
+            "lon": items[0]["lon"],
             "caption": event_caption,
             "photo_count": len(items),
             "photos": [r["path"] for r in items],

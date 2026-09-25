@@ -23,10 +23,10 @@
     --surface-2: #efebe2;
     --border: #e2dccf;
     --text: #17130e;
-    --text-muted: #6c6357;
+    --text-muted: #635a4e;
     --crack: #2a6a99;
     --crack-ink: #eaf7ff;
-    --memory: #b06a08;
+    --memory: #9a5c05;
     --memory-ink: #ffffff;
     --paper: #17130e;
     --paper-ink: #ffffff;
@@ -416,7 +416,7 @@
   .source-chip b { color: var(--text); font-weight: 500; }
   footer .credits-label {
     font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.07em;
-    text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; opacity: 0.7;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;
   }
 
 /* ---------------- CTA (index -> try.html) ---------------- */

@@ -514,3 +514,6 @@ photo frames (try page), shards assembling into a cracked photograph (closing
 call to action), contact-sheet film strips ("No manual albums" scene). One
 shared loader in `common.js` picks the file by theme, plays only while on
 screen, and stays off for reduced-motion and data-saver.
+
+## Accessibility pass
+Lighthouse (desktop): perf 85/91, a11y 93, best-practices 100, SEO 100. Fixed the two a11y failures (low-contrast amber/muted text on white, missing main landmark); a11y now 100 locally.

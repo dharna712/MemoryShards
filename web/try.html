@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0e0b08">
+<meta name="description" content="Upload a few photos and watch the real pipeline rebuild the timeline: places, captions and who is in each.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Try MemoryShards on your own photos">
+<meta property="og:description" content="Upload a few photos and watch the real pipeline rebuild the timeline: places, captions and who is in each.">
+<meta property="og:image" content="https://memoryshards.onrender.com/media/hero-poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <title>Try it &mdash; MemoryShards</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b0e14'/%3E%3Cpolygon points='52,18 82,42 68,86 32,86 18,42' fill='none' stroke='%23ffb168' stroke-width='5'/%3E%3Cline x1='52' y1='18' x2='50' y2='58' stroke='%23bfe4ff' stroke-width='3'/%3E%3Cline x1='82' y1='42' x2='50' y2='58' stroke='%23bfe4ff' stroke-width='3'/%3E%3Cline x1='18' y1='42' x2='50' y2='58' stroke='%23bfe4ff' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,6 +69,7 @@
     <div class="demo-progress" id="demoProgress" hidden>
       <span class="demo-spinner"></span>
       <span class="mono" id="demoProgressText">Extracting EXIF metadata…</span>
+      <ol class="stepper" id="stepper" aria-hidden="true"><li>Extract</li><li>Geocode</li><li>Cluster</li><li>Caption</li><li>Recognize</li></ol>
     </div>
     <div class="demo-status mono" id="demoStatus"></div>
     <div class="demo-skip-note mono" id="demoSkipNote" hidden></div>
@@ -136,6 +145,7 @@
       for (const file of selectedFiles) {
         const thumb = document.createElement('div');
         thumb.className = 'preview-thumb';
+        thumb.dataset.name = file.name;
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
         img.onload = () => URL.revokeObjectURL(img.src);
@@ -188,18 +198,25 @@
       'Extracting EXIF timestamp + GPS…',
       'Reverse-geocoding locations…',
       'Clustering photos into events…',
-      'Recognizing faces…',
       'Captioning with a vision-language model…',
+      'Recognizing faces…',
     ];
     let progressTimer = null;
 
     function startProgress() {
       let i = 0;
+      const steps = Array.from(document.querySelectorAll('#stepper li'));
+      const paint = () => steps.forEach((li, j) => {
+        li.classList.toggle('done', j < i);
+        li.classList.toggle('active', j === i);
+      });
       progressText.textContent = PROGRESS_STAGES[0];
       progress.hidden = false;
+      paint();
       progressTimer = setInterval(() => {
-        i = (i + 1) % PROGRESS_STAGES.length;
+        i = Math.min(i + 1, PROGRESS_STAGES.length - 1);
         progressText.textContent = PROGRESS_STAGES[i];
+        paint();
       }, 2500);
     }
 
@@ -219,6 +236,7 @@
     }
 
     let avatarById = {};
+    let morphActive = false;
 
     function renderPeople(people) {
       avatarById = {};
@@ -267,7 +285,7 @@
           : '';
         row.innerHTML =
           '<div class="tl-time">' + e.display_time + '</div>' +
-          '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')"></div>' +
+          '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')' + (morphActive ? ';view-transition-name:ev-' + i : '') + '"></div>' +
           '<div class="tl-label">' + (e.caption || '(no caption)') +
           '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span>' +
           peopleChips(e.people) + '</div>';
@@ -336,9 +354,34 @@
           renderSkipNote(data.skipped);
         } else {
           setStatus('');
-          renderPeople(data.people);
-          renderEvents(data.events);
-          renderSkipNote(data.skipped);
+          const apply = () => {
+            document.querySelectorAll('.preview-thumb').forEach(t => { t.style.viewTransitionName = ''; });
+            renderPeople(data.people);
+            renderEvents(data.events);
+            renderSkipNote(data.skipped);
+          };
+          const canMorph = document.startViewTransition &&
+            !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (canMorph) {
+            // Each event's first uploaded photo flies from the dropzone into its timeline row.
+            const thumbs = Array.from(document.querySelectorAll('.preview-thumb'));
+            data.events.forEach((e, i) => {
+              const first = e.filenames && e.filenames[0];
+              const el = first && thumbs.find(t => t.dataset.name === first);
+              if (el) el.style.viewTransitionName = 'ev-' + i;
+            });
+            results.classList.add('morphing');
+            morphActive = true;
+            const vt = document.startViewTransition(apply);
+            vt.ready.catch(() => {}); // skipped when the tab is hidden; the DOM update still runs
+            vt.finished.finally(() => {
+              morphActive = false;
+              results.classList.remove('morphing');
+              document.querySelectorAll('.tl-thumb').forEach(t => { t.style.viewTransitionName = ''; });
+            });
+          } else {
+            apply();
+          }
         }
       } catch (err) {
         // This catch only fires now for genuine network-level failures —

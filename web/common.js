@@ -47,3 +47,18 @@
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
   })();
+
+
+// Magnetic buttons: primary controls lean a few pixels toward the pointer.
+(function () {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !window.matchMedia('(hover: hover)').matches) return;
+  document.querySelectorAll('button.primary, .cta-link').forEach((el) => {
+    el.addEventListener('pointermove', (e) => {
+      const r = el.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+      const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+      el.style.translate = (dx * 8).toFixed(1) + 'px ' + (dy * 6).toFixed(1) + 'px';
+    });
+    el.addEventListener('pointerleave', () => { el.style.translate = ''; });
+  });
+})();

@@ -649,3 +649,44 @@ body:has(.try-page) {
 .stack-strip span { animation: strip-lit 8.4s linear infinite; animation-delay: calc(var(--i) * 1.2s); }
 @keyframes strip-lit { 0%, 13% { color: var(--memory); } 20%, 100% { color: var(--text-muted); } }
 @media (prefers-reduced-motion: reduce) { .stack-strip span { animation: none; } }
+
+
+/* ================= V3: motion + polish ================= */
+@view-transition { navigation: auto; }
+header.top { view-transition-name: site-header; }
+::view-transition-group(*) { animation-duration: 0.9s; animation-timing-function: cubic-bezier(.22,1,.36,1); }
+::view-transition-group(root), ::view-transition-group(site-header) { animation-duration: 0.35s; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+/* pipeline stepper while the request runs */
+.demo-progress { flex-wrap: wrap; }
+.stepper { display: flex; flex-wrap: wrap; gap: 8px 10px; list-style: none; padding: 0; margin: 8px 0 0; flex-basis: 100%; }
+.stepper li {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 4px 11px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-muted);
+  transition: color 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+}
+.stepper li.done { color: var(--text); border-color: var(--memory); }
+.stepper li.done::before { content: "\2713  "; color: var(--memory); }
+.stepper li.active { color: var(--memory-ink); background: var(--memory); border-color: var(--memory); animation: step-pulse 1.4s ease-in-out infinite; }
+@keyframes step-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--memory) 22%, transparent); } }
+.morphing .tl-row-enter, .morphing .person-card { animation: none; }
+
+/* cursor-reactive hero + spotlight cards */
+.shatter-stage { transform: perspective(900px) rotateY(calc(var(--tx, 0) * 6deg)) rotateX(calc(var(--ty, 0) * -5deg)); transition: transform 0.35s ease-out; }
+.hero-video { transform: translate(calc(var(--tx, 0) * -10px), calc(var(--ty, 0) * -8px)) scale(1.05); transition: opacity 1.4s ease, transform 0.5s ease-out; }
+.dossier {
+  background:
+    radial-gradient(220px circle at var(--mx, 50%) var(--my, -30%), color-mix(in srgb, var(--memory) 16%, transparent), transparent 70%),
+    var(--bg);
+}
+
+/* phones */
+@media (max-width: 560px) {
+  header.top > .wrap { flex-wrap: nowrap; padding-top: 14px; padding-bottom: 14px; }
+  .byline { display: none; }
+  .hud-clock { right: 14px; bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shatter-stage, .hero-video { transform: none; }
+}

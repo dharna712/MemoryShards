@@ -444,3 +444,15 @@ clock (08:00 -> 22:00), film grain, paper-style buttons, display footer.
 Try page inherits the system. Sticky panels fall back to normal flow on
 small/short screens so content is never cut off. Notes in
 `Projects/UI ideas.txt` section 6.
+
+## 2026-09-25 (late) — UI v3 (8.5 -> targeting 9)
+
+Hero loop video (original artwork via `tools/render_hero_loop.py`), tech-stack
+strip, CTA scramble. Then: cross-page view transitions (header stays put),
+cursor tilt on the hero + magnetic primary buttons, spotlight on stage cards,
+a live pipeline stepper while a request runs (no longer loops), and on the try
+page the uploaded photos morph into their timeline rows (View Transitions; the
+API now returns each event's filenames). Found and fixed a real mobile bug:
+neither page had a viewport meta tag, so phones would have rendered the desktop
+layout shrunk. Also added share metadata (description, theme-color, OG tags)
+and a one-row header on phones.

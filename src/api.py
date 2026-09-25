@@ -62,6 +62,7 @@ def event_to_json(event, photo_to_people):
         "photo_count": event["photo_count"],
         "standalone": event["standalone"],
         "people": sorted({pid for p in event["photos"] for pid in photo_to_people.get(str(p), [])}),
+        "filenames": [Path(p).name for p in event["photos"][:MAX_THUMBNAILS_PER_EVENT]],
         "thumbnail": thumbnails[0],
         "thumbnails": thumbnails,
         "more_photos_not_shown": max(0, event["photo_count"] - len(thumbnails)),

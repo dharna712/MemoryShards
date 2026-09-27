@@ -409,29 +409,32 @@
   .zip-piece {
     position: absolute; inset: 0; background-size: cover; background-position: center; border-radius: 10px;
   }
-  /* Straight seam down the middle -- both pieces clip to the same 50% line,
-     closing to opposite outer edges, so the join always lines up exactly. */
+  /* Straight seam down the middle, hinged at the shared bottom-center point
+     -- like a real zipper's fixed base, the bottom stays joined and only
+     the top swings open, instead of the whole seam separating evenly. */
   .zip-piece--left {
     clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
-    transform-origin: right center;
-    transform: translateX(calc(var(--zip-open) * -68px)) rotate(calc(var(--zip-open) * -2.6deg));
+    transform-origin: 50% 100%;
+    transform: rotate(calc(var(--zip-open) * -11deg));
   }
   .zip-piece--right {
     clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
-    transform-origin: left center;
-    transform: translateX(calc(var(--zip-open) * 68px)) rotate(calc(var(--zip-open) * 2.6deg));
+    transform-origin: 50% 100%;
+    transform: rotate(calc(var(--zip-open) * 11deg));
   }
   /* Teeth: small flat ticks along the seam, exposed while open/mid-zip, and
      faded out entirely once fully closed -- no scar left on the whole photo. */
   .zip-teeth {
-    position: absolute; left: 50%; top: 7%; bottom: 7%; width: 3px; margin-left: -1.5px;
+    position: absolute; left: 50%; top: 2%; bottom: 0; width: 3px; margin-left: -1.5px;
     background-image: repeating-linear-gradient(to bottom, var(--memory) 0 4px, transparent 4px 11px);
     opacity: var(--zip-open); z-index: 2; pointer-events: none;
   }
+  /* Pull travels bottom (fully open, like a real zipper's resting/unzipped
+     position) to top (fully closed) -- scrolling further "zips it up". */
   .zip-pull {
     position: absolute; left: 50%; width: 10px; height: 22px; margin-left: -5px;
     background: var(--memory); border-radius: 3px; box-shadow: 0 2px 6px var(--drop);
-    top: calc((1 - var(--zip-open)) * 100% - 11px);
+    top: calc(var(--zip-open) * (100% - 22px));
     opacity: var(--zip-open); z-index: 3; pointer-events: none;
   }
   .zip-pull::after {

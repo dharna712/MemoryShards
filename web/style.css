@@ -291,16 +291,21 @@
   .live-demo-section .section-sub { color: var(--text-muted); font-size: 14px; margin-bottom: 26px; max-width: 64ch; }
   .dropzone {
     position: relative; border: 1.5px dashed color-mix(in srgb, var(--text) 38%, transparent); border-radius: 12px;
-    padding: 28px; margin-bottom: 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    padding: 40px 28px; margin-bottom: 16px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
     background: var(--surface);
   }
   .dropzone:hover, .dropzone:focus-visible { border-color: var(--memory); outline: none; }
+  .dropzone:hover .dropzone-icon { transform: translateY(-3px); }
   .dropzone.dragover { border-color: var(--memory); background: var(--surface-2); }
   .dropzone-hint {
-    display: flex; align-items: center; justify-content: center; gap: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
     font-size: 14px; color: var(--text-muted); text-align: center;
   }
-  .dropzone-icon { font-size: 20px; color: var(--memory); }
+  .dropzone-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; border-radius: 50%; font-size: 18px; color: var(--memory);
+    background: color-mix(in srgb, var(--memory) 10%, transparent); transition: transform 0.2s var(--ease);
+  }
   .dropzone-browse { color: var(--crack); text-decoration: underline; text-underline-offset: 2px; }
   .dropzone-previews {
     display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px;
@@ -508,20 +513,24 @@
 .cta-link:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 /* ---------------- STANDALONE PAGE (try.html) ---------------- */
-.page-intro { max-width: 720px; margin: 0 auto 8px; padding: 48px 0 0; }
+.page-intro { max-width: 860px; margin: 0 auto 8px; padding: 48px 0 0; }
 .back-link {
   display: inline-flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted);
   text-decoration: none; margin-bottom: 18px; transition: color 0.2s ease, transform 0.2s ease;
 }
 .back-link:hover { color: var(--memory); transform: translateX(-2px); }
-.try-page .live-demo-section { border-top: none; padding: 8px 0 64px; max-width: 720px; margin: 0 auto; }
-.guide-steps { display: flex; flex-wrap: wrap; gap: 22px; margin-bottom: 28px; }
-.guide-step { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--text-muted); }
+.try-page .live-demo-section { border-top: none; padding: 8px 0 64px; max-width: 860px; margin: 0 auto; }
+.guide-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 34px; align-items: center; }
+.guide-step { display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 600; color: var(--text); }
+.guide-step:not(:last-child)::after {
+  content: ""; width: 30px; height: 1px; background: var(--border); margin: 0 6px;
+}
 .guide-num {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); color: var(--crack);
-  font-size: 11px; flex: none;
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--memory); color: var(--memory); font-weight: 800; font-size: 12px;
+  background: color-mix(in srgb, var(--memory) 9%, transparent);
 }
 body:has(.try-page) {
   background:

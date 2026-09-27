@@ -323,7 +323,7 @@
   }
   .tl-expand:hover { opacity: 0.8; }
   .tl-gallery {
-    display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 18px 112px; align-items: center;
+    display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 18px 202px; align-items: center;
   }
   .tl-gallery-thumb {
     width: 64px; height: 48px; background-size: cover; background-position: center;

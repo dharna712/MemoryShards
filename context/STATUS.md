@@ -520,3 +520,6 @@ Lighthouse (desktop): perf 85/91, a11y 93, best-practices 100, SEO 100. Fixed th
 
 ## UI polish pass
 Stronger hero subheadline, larger wordmark, darker dropzone/ghost-button borders and option label on the try page, results summary strip (photos/events/people) with auto-scroll after a run.
+
+## Gallery alignment fix
+Fixed .tl-gallery left offset (112px -> 202px) to match the tl-row grid math (10 padding + 96 time col + 16 gap + 64 thumb col + 16 gap), so expanded multi-photo thumbnails line up under the row caption text.

@@ -18,7 +18,7 @@
   // ancestor (the panel depth-push effect) was involved, silently
   // blanking whole sections of text on scroll.
   (function () {
-    const targets = document.querySelectorAll('.reveal, .zip-half, .zip-caption');
+    const targets = document.querySelectorAll('.reveal');
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) {
       targets.forEach(el => el.classList.add('is-visible'));

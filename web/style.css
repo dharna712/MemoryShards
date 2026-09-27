@@ -397,22 +397,44 @@
     position: relative; width: 100%; max-width: 460px; aspect-ratio: 4/3; margin: 0 auto;
     filter: drop-shadow(0 26px 40px var(--drop));
   }
-  .zip-half {
+  .zip-piece {
     position: absolute; inset: 0; background-size: cover; background-position: center;
-    border-radius: 10px; opacity: 0; transition: opacity 0.9s ease;
+    border-radius: 10px; opacity: 0; transition: opacity 0.4s ease, transform 1.15s cubic-bezier(.2,.9,.25,1);
   }
-  .zip-half.is-visible { opacity: 1; }
+  /* Jagged torn seam: both pieces clip the SAME points, closing to opposite
+     outer edges, so the tear line matches exactly wherever the pieces sit. */
+  .zip-piece--left {
+    clip-path: polygon(0% 0%, 54% 0%, 46% 9%, 60% 19%, 41% 30%, 59% 42%, 40% 54%,
+      61% 66%, 39% 78%, 57% 90%, 47% 100%, 0% 100%);
+    transform: translate(-22px, -6px) rotate(-1.4deg);
+  }
+  .zip-piece--right {
+    clip-path: polygon(100% 0%, 54% 0%, 46% 9%, 60% 19%, 41% 30%, 59% 42%, 40% 54%,
+      61% 66%, 39% 78%, 57% 90%, 47% 100%, 100% 100%);
+    transform: translate(22px, 6px) rotate(1.4deg);
+  }
+  .zip-stage.is-visible .zip-piece { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  .zip-pull {
+    position: absolute; left: 50%; top: -14px; width: 10px; height: 22px; margin-left: -5px;
+    background: var(--memory); border-radius: 3px; box-shadow: 0 2px 6px var(--drop);
+    opacity: 0; transition: opacity 0.3s ease, top 1.15s cubic-bezier(.2,.9,.25,1);
+  }
+  .zip-pull::after {
+    content: ""; position: absolute; left: 50%; top: -5px; width: 2px; height: 10px;
+    background: var(--memory); transform: translateX(-50%);
+  }
+  .zip-stage.is-visible .zip-pull { opacity: 1; top: calc(100% - 8px); transition-delay: 0s, 0.1s; }
   .zip-caption {
     position: absolute; left: 8%; right: 8%; bottom: 10%;
     text-align: left;
     opacity: 0; transform: translateY(22px);
-    transition: opacity 0.6s ease 0.25s, transform 0.6s cubic-bezier(.2,.9,.25,1) 0.25s;
+    transition: opacity 0.6s ease 1.1s, transform 0.6s cubic-bezier(.2,.9,.25,1) 1.1s;
   }
-  .zip-caption.is-visible { opacity: 1; transform: translateY(0); }
+  .zip-stage.is-visible .zip-caption { opacity: 1; transform: translateY(0); }
   .zip-caption .eyebrow { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: var(--memory); margin-bottom: 4px; }
   .zip-caption .line { font-family: 'Satoshi', sans-serif; font-weight: 700; font-size: 19px; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
   @media (prefers-reduced-motion: reduce) {
-    .zip-half, .zip-caption { transition: none !important; transform: none !important; opacity: 1 !important; }
+    .zip-piece, .zip-pull, .zip-caption { transition: none !important; transform: translate(0,0) rotate(0deg) !important; opacity: 1 !important; top: calc(100% - 8px) !important; }
   }
 
   /* ---------------- FOOTER ---------------- */

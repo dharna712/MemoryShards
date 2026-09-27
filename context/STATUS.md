@@ -538,3 +538,6 @@ The 94%/98.8%/1 proof stats now count up from 0 the first time they scroll into 
 
 ## Visual: connecting thread through the example timeline
 Added a literal amber thread with small beads running through the landing-page example timeline (gap between time and thumbnail columns), drawing in on scroll -- reinforces the "reassembled" copy. Reuses the existing .reveal/IntersectionObserver mechanism, no new JS. Verified aligned in both themes.
+
+## Visual: built the tear-and-zip fragment effect
+The "One fragment at a time" section used to just fade a single static photo in. Replaced it with the actual torn-photo-halves-zip-together effect that had been sitting as an unbuilt idea in UI ideas.txt since 2026-09-12: two jagged-seam clip-path halves of the same photo start apart and rotated, converge into place on scroll, with a small amber zipper-pull sliding down the seam. Cleaned up the now-dead .zip-half/.zip-caption entries from the shared reveal observer since the new markup drives itself off .zip-stage.is-visible descendant selectors. Verified via computed styles (before: torn apart + opacity 0; after: converged + opacity 1) in both themes; a local screenshot tool glitch on this scroll position blocked a visual capture but did not reflect a real rendering issue.

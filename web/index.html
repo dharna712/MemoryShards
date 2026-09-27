@@ -106,8 +106,10 @@
     <h2 class="reveal">One fragment at a time</h2>
     <p class="section-sub reveal">This is what one reconstructed fragment looks like — the same thing this project does across an entire timeline.</p>
     <div class="zip-stage">
-      <div class="zip-piece zip-piece--left" style="background-image:url('media/demo-2.jpg')"></div>
-      <div class="zip-piece zip-piece--right" style="background-image:url('media/demo-2.jpg')"></div>
+      <div class="zip-flap zip-flap--left" style="background-image:url('media/demo-2.jpg')"></div>
+      <div class="zip-flap zip-flap--right" style="background-image:url('media/demo-2.jpg')"></div>
+      <div class="zip-base zip-base--left" style="background-image:url('media/demo-2.jpg')"></div>
+      <div class="zip-base zip-base--right" style="background-image:url('media/demo-2.jpg')"></div>
       <div class="zip-teeth" aria-hidden="true"></div>
       <div class="zip-pull" aria-hidden="true"></div>
       <div class="zip-caption">
@@ -370,12 +372,26 @@
       panelTop = panel.getBoundingClientRect().top + window.scrollY;
       panelHeight = panel.offsetHeight;
       panel.style.position = prevPosition;
+      // The stage's real rendered pixel size, so the flap/base backgrounds
+      // (fixed-size, not `cover`) line up exactly at the seam regardless of
+      // how tall the flap currently is.
+      const stageRect = stage.getBoundingClientRect();
+      stage.style.setProperty('--sw', stageRect.width + 'px');
+      stage.style.setProperty('--sh', stageRect.height + 'px');
     };
     measure();
     window.addEventListener('resize', measure, { passive: true });
     const update = () => {
+      // .panel-pipeline (the next stacked card) turned out to engage its own
+      // sticky pin almost immediately after entering .panel-zip's range --
+      // measured its rect as already pinned at a constant viewport position
+      // from as little as 10% into panel-zip's own height. So closing the
+      // zip over half that height (the original choice) left it still
+      // visibly open while the next card's torn edge was already rising
+      // over it. Closing over a short window right at the start instead
+      // means whatever the next card later covers is the finished photo.
       const scrolledIntoPanel = window.scrollY - panelTop;
-      const t = Math.max(0, Math.min(1, scrolledIntoPanel / (panelHeight * 0.5)));
+      const t = Math.max(0, Math.min(1, scrolledIntoPanel / (panelHeight * 0.16)));
       stage.style.setProperty('--zip-open', String(1 - t));
     };
     window.addEventListener('scroll', update, { passive: true });

@@ -404,24 +404,35 @@
   .zip-stage {
     position: relative; width: 100%; max-width: 460px; aspect-ratio: 4/3; margin: 0 auto;
     filter: drop-shadow(0 26px 40px var(--drop));
-    --zip-open: 1;
+    --zip-open: 1; --sw: 460px; --sh: 345px;
   }
-  .zip-piece {
-    position: absolute; inset: 0; background-size: cover; background-position: center; border-radius: 10px;
+  /* Each side is a flat, motionless BASE (the sealed portion, below the
+     pull) plus a rotating FLAP above it (the still-open portion) -- not one
+     rigid piece hinging its whole height. The flap shrinks to nothing as
+     --zip-open drops, so the base grows to fill the frame with a genuinely
+     flush, fully-joined seam below the pull, not a wedge that's merely
+     narrow near the bottom. Both use a fixed-pixel background-size (--sw/
+     --sh, the stage's real rendered size) instead of `cover`, so the flap
+     and base always show the correct continuation of the SAME image at the
+     same scale -- cover would rescale each independently as their heights
+     change and the photo would visibly not line up at the seam. */
+  .zip-flap, .zip-base {
+    position: absolute; left: 0; right: 0; background-size: var(--sw) var(--sh); background-repeat: no-repeat; border-radius: 10px;
   }
-  /* Straight seam down the middle, hinged at the shared bottom-center point
-     -- like a real zipper's fixed base, the bottom stays joined and only
-     the top swings open, instead of the whole seam separating evenly. */
-  .zip-piece--left {
-    clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
-    transform-origin: 50% 100%;
-    transform: rotate(calc(var(--zip-open) * -11deg));
-  }
-  .zip-piece--right {
-    clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
-    transform-origin: 50% 100%;
-    transform: rotate(calc(var(--zip-open) * 11deg));
-  }
+  .zip-flap { top: 0; height: calc(var(--zip-open) * 100%); overflow: hidden; transform-origin: 50% 100%; }
+  .zip-base { bottom: 0; height: calc((1 - var(--zip-open)) * 100%); overflow: hidden; }
+  /* skewX, not rotate: a rotation around the bottom-seam point necessarily
+     swings the FAR bottom corner up/down too (any point off the pivot moves
+     on a circular arc) -- measured a ~55px vertical drift on the outer
+     corner, which read as "not actually connected at the bottom" exactly as
+     reported. skewX shifts x purely as a function of y with zero
+     y-displacement, so the entire bottom edge (y=100%, same y as the
+     transform-origin) stays perfectly flush no matter how far a point is
+     from the seam, while the top edge swings open the most. */
+  .zip-flap--left  { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%); transform: skewX(-24deg); background-position: 0 0; }
+  .zip-flap--right { clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%); transform: skewX(24deg); background-position: 0 0; }
+  .zip-base--left  { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%); background-position: 0 calc(var(--zip-open) * -1 * var(--sh)); }
+  .zip-base--right { clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%); background-position: 0 calc(var(--zip-open) * -1 * var(--sh)); }
   /* Teeth: small flat ticks along the seam, exposed while open/mid-zip, and
      faded out entirely once fully closed -- no scar left on the whole photo. */
   .zip-teeth {

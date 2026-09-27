@@ -349,18 +349,33 @@
   // scroll position within .panel-zip's own range. Can't use the stage's
   // getBoundingClientRect() for this -- .panel-zip is position: sticky, so
   // once pinned, the stage's painted rect stops changing for most of the
-  // scroll (confirmed: it sat at an identical rect through 1000px of
-  // scroll), and animation-timeline: view() has the same blind spot for
-  // the same reason. offsetTop/offsetHeight are unaffected by an element's
-  // own sticky positioning, so scrollY against those gives real, continuous
-  // progress through the pin -- correct in both scroll directions.
+  // scroll, and animation-timeline: view() has the same blind spot for the
+  // same reason. panel.offsetTop turned out to have the same problem in a
+  // sneakier way: measured live, it drifted WITH scrollY once the panel
+  // engaged sticky (1888 at load, 2012 after only 112px of scroll) instead
+  // of staying at its static flow position, which silently kept the
+  // computed progress pinned near zero -- looked "stuck open" no matter how
+  // far you scrolled. Fixed by measuring the TRUE static top once (briefly
+  // forcing position: static to read it with getBoundingClientRect, then
+  // reverting -- a synchronous read+revert, no visible flash) and caching
+  // it, instead of re-reading offsetTop on every scroll tick.
   (function () {
     const panel = document.querySelector('.panel-zip');
     const stage = document.querySelector('.zip-stage');
     if (!panel || !stage || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let panelTop = 0, panelHeight = 0;
+    const measure = () => {
+      const prevPosition = panel.style.position;
+      panel.style.position = 'static';
+      panelTop = panel.getBoundingClientRect().top + window.scrollY;
+      panelHeight = panel.offsetHeight;
+      panel.style.position = prevPosition;
+    };
+    measure();
+    window.addEventListener('resize', measure, { passive: true });
     const update = () => {
-      const scrolledIntoPanel = window.scrollY - panel.offsetTop;
-      const t = Math.max(0, Math.min(1, scrolledIntoPanel / (panel.offsetHeight * 0.5)));
+      const scrolledIntoPanel = window.scrollY - panelTop;
+      const t = Math.max(0, Math.min(1, scrolledIntoPanel / (panelHeight * 0.5)));
       stage.style.setProperty('--zip-open', String(1 - t));
     };
     window.addEventListener('scroll', update, { passive: true });

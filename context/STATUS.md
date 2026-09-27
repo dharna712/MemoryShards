@@ -589,3 +589,6 @@ The photos/events/people summary strip above the timeline used to just appear wi
 ## Try page: more polish -- person card hover, results-summary reveal glow
 - Person cards in the people strip now lift slightly and their avatar ring swaps to the crack-blue accent on hover, matching the tactile hover feel used elsewhere on the site (timeline thumbs, buttons).
 - The results-summary card (photos/events/people counts) now has a one-shot amber glow as it slides in, giving the results moment a small payoff instead of a flat appearance. Pure CSS keyframe animation (no rAF), confirmed applied via computed animation-name.
+
+## Fixed another instance of the low-contrast red
+Found `.preview-remove:hover` (the x button on an uploaded photo thumbnail) still used the old #e3695f red fixed earlier for the error notice (~3.25:1 contrast, fails WCAG AA). Swapped to the same #b3261e already used elsewhere (~6.5:1), added a small hover scale for tactile feedback, and grepped the whole stylesheet for the old color to confirm no other instances remain.

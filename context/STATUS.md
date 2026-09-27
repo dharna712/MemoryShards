@@ -523,3 +523,6 @@ Stronger hero subheadline, larger wordmark, darker dropzone/ghost-button borders
 
 ## Gallery alignment fix
 Fixed .tl-gallery left offset (112px -> 202px) to match the tl-row grid math (10 padding + 96 time col + 16 gap + 64 thumb col + 16 gap), so expanded multi-photo thumbnails line up under the row caption text.
+
+## Real geo-scenario test data (local only, not in repo)
+Added src/download_scenario_photos.py: pulls real, EXIF-verified geotagged Wikimedia Commons photos clustered into the 4 scenarios discussed (same neighbourhood, same city, same state, cross-state), re-checking embedded GPS+DateTimeOriginal after download since Commons page metadata alone is not reliable. Ran all 4 against build_timeline: place labels came out honest in every case (Pune / Shivaji Nagar / near Khadki / near Pimpri for the Pune scenarios; Mumbai/Pune/Nashik separated correctly; Bangalore/Haora/Bankra separated correctly for cross-state). Photos live in data/raw/scenario_* (gitignored, not published).

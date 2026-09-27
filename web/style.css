@@ -37,6 +37,7 @@
   }
 
   * { box-sizing: border-box; }
+  @property --zip-open { syntax: '<number>'; inherits: true; initial-value: 1; }
   html { scroll-behavior: smooth; }
   body { background: var(--bg); color: var(--text); font-family: 'Satoshi', -apple-system, sans-serif; line-height: 1.6; }
   ::selection { background: var(--memory); color: var(--memory-ink); }
@@ -392,52 +393,60 @@
     .reel-ring { animation: none; transform: rotateY(0deg); }
   }
 
-  /* ---------------- ZIP PANEL (torn photo, zips whole) ---------------- */
+  /* ---------------- ZIP PANEL (a real zipper, driven by scroll position) ---------------- */
+  /* --zip-open: 1 = open (photo split, teeth showing), 0 = zipped closed (whole
+     photo, teeth gone). Registered as a <number> so the browser can smoothly
+     interpolate it across the scroll-linked animation below, rather than
+     jumping at the midpoint the way an untyped custom property would. */
   .zip-section { text-align: center; }
   .zip-section h2 { font-size: 22px; margin-bottom: 6px; }
   .zip-section .section-sub { color: var(--text-muted); font-size: 14px; max-width: 52ch; margin: 0 auto 32px; }
   .zip-stage {
     position: relative; width: 100%; max-width: 460px; aspect-ratio: 4/3; margin: 0 auto;
     filter: drop-shadow(0 26px 40px var(--drop));
+    --zip-open: 1;
   }
   .zip-piece {
-    position: absolute; inset: 0; background-size: cover; background-position: center;
-    border-radius: 10px; opacity: 0; transition: opacity 0.5s ease, transform 2.4s cubic-bezier(.16,.9,.2,1);
+    position: absolute; inset: 0; background-size: cover; background-position: center; border-radius: 10px;
   }
-  /* Jagged torn seam: both pieces clip the SAME points, closing to opposite
-     outer edges, so the tear line matches exactly wherever the pieces sit. */
+  /* Straight seam down the middle -- both pieces clip to the same 50% line,
+     closing to opposite outer edges, so the join always lines up exactly. */
   .zip-piece--left {
-    clip-path: polygon(0% 0%, 54% 0%, 46% 9%, 60% 19%, 41% 30%, 59% 42%, 40% 54%,
-      61% 66%, 39% 78%, 57% 90%, 47% 100%, 0% 100%);
-    transform: translate(-90px, -26px) rotate(-4.5deg);
+    clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%);
+    transform-origin: right center;
+    transform: translateX(calc(var(--zip-open) * -68px)) rotate(calc(var(--zip-open) * -2.6deg));
   }
   .zip-piece--right {
-    clip-path: polygon(100% 0%, 54% 0%, 46% 9%, 60% 19%, 41% 30%, 59% 42%, 40% 54%,
-      61% 66%, 39% 78%, 57% 90%, 47% 100%, 100% 100%);
-    transform: translate(90px, 26px) rotate(4.5deg);
+    clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%);
+    transform-origin: left center;
+    transform: translateX(calc(var(--zip-open) * 68px)) rotate(calc(var(--zip-open) * 2.6deg));
   }
-  .zip-stage.is-visible .zip-piece { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  /* Teeth: small flat ticks along the seam, exposed while open/mid-zip, and
+     faded out entirely once fully closed -- no scar left on the whole photo. */
+  .zip-teeth {
+    position: absolute; left: 50%; top: 7%; bottom: 7%; width: 3px; margin-left: -1.5px;
+    background-image: repeating-linear-gradient(to bottom, var(--memory) 0 4px, transparent 4px 11px);
+    opacity: var(--zip-open); z-index: 2; pointer-events: none;
+  }
   .zip-pull {
-    position: absolute; left: 50%; top: -14px; width: 10px; height: 22px; margin-left: -5px;
+    position: absolute; left: 50%; width: 10px; height: 22px; margin-left: -5px;
     background: var(--memory); border-radius: 3px; box-shadow: 0 2px 6px var(--drop);
-    opacity: 0; transition: opacity 0.3s ease, top 2.4s cubic-bezier(.16,.9,.2,1) 0.15s;
+    top: calc((1 - var(--zip-open)) * 100% - 11px);
+    opacity: var(--zip-open); z-index: 3; pointer-events: none;
   }
   .zip-pull::after {
     content: ""; position: absolute; left: 50%; top: -5px; width: 2px; height: 10px;
     background: var(--memory); transform: translateX(-50%);
   }
-  .zip-stage.is-visible .zip-pull { opacity: 1; top: calc(100% - 8px); }
   .zip-caption {
     position: absolute; left: 8%; right: 8%; bottom: 10%;
     text-align: left;
-    opacity: 0; transform: translateY(22px);
-    transition: opacity 0.6s ease 2.4s, transform 0.6s cubic-bezier(.2,.9,.25,1) 2.4s;
+    opacity: calc(1 - var(--zip-open)); transform: translateY(calc(var(--zip-open) * 22px));
   }
-  .zip-stage.is-visible .zip-caption { opacity: 1; transform: translateY(0); }
   .zip-caption .eyebrow { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: var(--memory); margin-bottom: 4px; }
   .zip-caption .line { font-family: 'Satoshi', sans-serif; font-weight: 700; font-size: 19px; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.6); }
   @media (prefers-reduced-motion: reduce) {
-    .zip-piece, .zip-pull, .zip-caption { transition: none !important; transform: translate(0,0) rotate(0deg) !important; opacity: 1 !important; top: calc(100% - 8px) !important; }
+    .zip-stage { --zip-open: 0 !important; }
   }
 
   /* ---------------- FOOTER ---------------- */

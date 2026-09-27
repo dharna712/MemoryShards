@@ -105,9 +105,10 @@
   <section class="zip-section">
     <h2 class="reveal">One fragment at a time</h2>
     <p class="section-sub reveal">This is what one reconstructed fragment looks like — the same thing this project does across an entire timeline.</p>
-    <div class="zip-stage reveal">
+    <div class="zip-stage">
       <div class="zip-piece zip-piece--left" style="background-image:url('media/demo-2.jpg')"></div>
       <div class="zip-piece zip-piece--right" style="background-image:url('media/demo-2.jpg')"></div>
+      <div class="zip-teeth" aria-hidden="true"></div>
       <div class="zip-pull" aria-hidden="true"></div>
       <div class="zip-caption">
         <span class="eyebrow">10:30 AM · Marine Drive</span>
@@ -342,6 +343,28 @@
         card.style.setProperty('--my', (e.clientY - r.top) + 'px');
       });
     });
+  })();
+
+  // Zip stage: --zip-open (1 = torn apart/open, 0 = zipped closed) tracks
+  // scroll position within .panel-zip's own range. Can't use the stage's
+  // getBoundingClientRect() for this -- .panel-zip is position: sticky, so
+  // once pinned, the stage's painted rect stops changing for most of the
+  // scroll (confirmed: it sat at an identical rect through 1000px of
+  // scroll), and animation-timeline: view() has the same blind spot for
+  // the same reason. offsetTop/offsetHeight are unaffected by an element's
+  // own sticky positioning, so scrollY against those gives real, continuous
+  // progress through the pin -- correct in both scroll directions.
+  (function () {
+    const panel = document.querySelector('.panel-zip');
+    const stage = document.querySelector('.zip-stage');
+    if (!panel || !stage || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const update = () => {
+      const scrolledIntoPanel = window.scrollY - panel.offsetTop;
+      const t = Math.max(0, Math.min(1, scrolledIntoPanel / (panel.offsetHeight * 0.5)));
+      stage.style.setProperty('--zip-open', String(1 - t));
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    update();
   })();
 
   // HUD clock: the page is one day, and scrolling moves it from 08:00 to 22:00.

@@ -529,3 +529,6 @@ Added src/download_scenario_photos.py: pulls real, EXIF-verified geotagged Wikim
 
 ## Performance: de-duplicated inline images
 index.html embedded 4 unique demo photos as base64 data-URIs 10 times over (hero shatter, timeline example rows, reel cards) -> 227KB of HTML, all shipped inline with zero caching. Extracted to web/media/demo-1..4.jpg, referenced by url(), page dropped to ~19KB and the 4 images now load once and cache across every reuse. Verified all 10 reuse points render identically (hero, zip-stage example, reel).
+
+## Error notice polish + contrast fix
+demo-status.error was plain red mono text (#e3695f on white ~= 3.25:1 contrast, fails WCAG AA at normal text size). Now a tinted notice card matching the existing demo-skip-note pattern, with a proper #b3261e-based red (~6.5:1 contrast) and an icon badge. Verified visually.

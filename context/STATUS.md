@@ -574,3 +574,11 @@ Also moved the teeth: they were a single straight dashed line fixed at the stage
 
 ## Try page visual overhaul
 The try page (the actual live demo) was noticeably plainer than the landing page -- headless screenshots confirmed a narrow 720px content column swimming in mostly-empty background at real desktop widths, a bare numbered-list stepper, and a flat dropzone. Widened the content column to 860px, redesigned the 1-2-3 guide steps into amber-outlined circles connected by thin lines (matching the dossier/proof visual language used elsewhere), and gave the dropzone icon a bigger circular amber-tinted badge with a small lift on hover. Left the results view (map, timeline, people strip) untouched since it was already verified working earlier this session and carries no regression risk from this pass.
+
+## Results map: click-to-zoom, drag-to-pan, zoom buttons
+The map was purely static (auto-fit projection, hover-to-highlight only, no zoom/pan). Added interactivity:
+- Click a pin or its timeline row to zoom to 3x centered on that point.
+- +/- buttons (increment scale by 1, clamped 1-6) and a reset button, top-right of the map card.
+- Drag to pan once zoomed in (pointer events, grab/grabbing cursor); a drag is distinguished from a click so panning doesn't also re-trigger a pin's zoom.
+Implementation: everything except the scale bar lives in one <g class="geo-zoom-layer">, and pan/zoom is a single CSS `transform: translate() scale()` on that group -- the browser interpolates and pans it for free, no per-frame viewBox math. The scale bar is deliberately left outside the zoom layer since its printed km value is only accurate for the initial fit; scaling it with zoom would make a stale number look freshly correct.
+Verified the actual logic directly (inline transform values matched hand-calculated expected translate/scale for zoom-to-point, drag delta, and the zoom-out floor clamp) rather than trusting getComputedStyle -- this session's browser pane is hidden, which appears to pause CSS transition frames for backgrounded tabs in Chromium, so computed style read stale values after clicks even though the inline style (and therefore what a real, visible tab would render) was correct every time.

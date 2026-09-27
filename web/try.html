@@ -88,6 +88,12 @@
     <div class="people-strip" id="peopleStrip" hidden></div>
     <div class="geo-map" id="geoMap" hidden>
       <svg id="geoSvg" viewBox="0 0 900 450" role="img" aria-label="Map of where the photos were taken"></svg>
+      <div class="geo-zoom-controls" aria-hidden="true">
+        <button type="button" class="geo-zoom-btn" id="geoZoomIn" title="Zoom in">+</button>
+        <button type="button" class="geo-zoom-btn" id="geoZoomOut" title="Zoom out">&minus;</button>
+        <button type="button" class="geo-zoom-btn geo-zoom-reset" id="geoZoomReset" title="Reset view">&#8634;</button>
+      </div>
+      <div class="geo-map-hint mono">Click a pin to zoom in &middot; drag to pan</div>
     </div>
     <div class="tl" id="demoResults"></div>
     <p class="sample-credits mono" id="sampleCredits" hidden></p>
@@ -139,6 +145,9 @@
     const peopleStrip = document.getElementById('peopleStrip');
     const geoMap = document.getElementById('geoMap');
     const geoSvg = document.getElementById('geoSvg');
+    const geoZoomIn = document.getElementById('geoZoomIn');
+    const geoZoomOut = document.getElementById('geoZoomOut');
+    const geoZoomReset = document.getElementById('geoZoomReset');
     const sampleCredits = document.getElementById('sampleCredits');
     const btnSample = document.getElementById('btnSample');
     const onlinePlaces = document.getElementById('onlinePlaces');
@@ -404,17 +413,25 @@
       const lonView = viewX / cosf;
 
       geoSvg.replaceChildren();
+      // Everything except the scale bar lives in this group -- pan/zoom just
+      // transforms the group (CSS transform, so it animates and pans for
+      // free) instead of recomputing the projection. The scale bar stays
+      // outside it: its printed distance is only accurate for the initial
+      // fit, and scaling it along with a zoom would make a stale number
+      // look freshly correct, which is worse than it just not moving.
+      const zoomLayer = svgEl('g', { class: 'geo-zoom-layer' });
+      geoSvg.appendChild(zoomLayer);
 
       const step = NICE_STEPS.find((v) => v >= lonView / 8) || 30;
       for (let lo = Math.ceil((cLon - lonView / 2) / step) * step; lo <= cLon + lonView / 2; lo += step) {
-        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: X(lo), y1: 0, x2: X(lo), y2: H }));
+        zoomLayer.appendChild(svgEl('line', { class: 'geo-grid', x1: X(lo), y1: 0, x2: X(lo), y2: H }));
       }
       for (let la = Math.ceil((cLat - viewX / 4) / step) * step; la <= cLat + viewX / 4; la += step) {
-        geoSvg.appendChild(svgEl('line', { class: 'geo-grid', x1: 0, y1: Y(la), x2: W, y2: Y(la) }));
+        zoomLayer.appendChild(svgEl('line', { class: 'geo-grid', x1: 0, y1: Y(la), x2: W, y2: Y(la) }));
       }
       if (rings && lonView > 1.2) {
         const d = rings.map((r) => 'M' + r.map(([lo, la]) => X(lo).toFixed(1) + ' ' + Y(la).toFixed(1)).join('L') + 'Z').join('');
-        geoSvg.appendChild(svgEl('path', { class: 'geo-land', d }));
+        zoomLayer.appendChild(svgEl('path', { class: 'geo-land', d }));
       }
 
       // scale bar
@@ -453,12 +470,12 @@
 
       if (stops.length > 1) {
         const route = pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
-        geoSvg.appendChild(svgEl('path', { class: 'geo-route', d: route, pathLength: 100 }));
+        zoomLayer.appendChild(svgEl('path', { class: 'geo-route', d: route, pathLength: 100 }));
       }
       pts.forEach((p) => {
         if (Math.hypot(p.x - p.tx, p.y - p.ty) > 3) {
-          geoSvg.appendChild(svgEl('line', { class: 'geo-leader', x1: p.tx, y1: p.ty, x2: p.x, y2: p.y }));
-          geoSvg.appendChild(svgEl('circle', { class: 'geo-true', cx: p.tx, cy: p.ty, r: 2.2 }));
+          zoomLayer.appendChild(svgEl('line', { class: 'geo-leader', x1: p.tx, y1: p.ty, x2: p.x, y2: p.y }));
+          zoomLayer.appendChild(svgEl('circle', { class: 'geo-true', cx: p.tx, cy: p.ty, r: 2.2 }));
         }
       });
 
@@ -489,7 +506,7 @@
       labels.forEach((l) => {
         const t = svgEl('text', { class: 'geo-label', x: l.x, y: l.y, 'text-anchor': l.anchor });
         t.textContent = l.text;
-        geoSvg.appendChild(t);
+        zoomLayer.appendChild(t);
       });
 
       stops.forEach((e, i) => {
@@ -502,15 +519,86 @@
         const num = svgEl('text', { class: 'geo-num', y: 3.6, 'text-anchor': 'middle' });
         num.textContent = e.n;
         g.appendChild(num);
-        geoSvg.appendChild(g);
+        g.style.cursor = 'zoom-in';
+        g.addEventListener('click', () => zoomToPoint(pts[i].x, pts[i].y));
+        zoomLayer.appendChild(g);
       });
       geoMap.hidden = false;
+      initGeoZoomPan(zoomLayer);
 
-      // hovering a timeline row lights its pin
+      // hovering a timeline row lights its pin; clicking one zooms to it
       results.querySelectorAll('.tl-row').forEach((row, i) => {
-        row.addEventListener('mouseenter', () => geoSvg.querySelector('.geo-pin[data-n="' + (i + 1) + '"]')?.classList.add('is-active'));
-        row.addEventListener('mouseleave', () => geoSvg.querySelector('.geo-pin[data-n="' + (i + 1) + '"]')?.classList.remove('is-active'));
+        const pin = () => geoSvg.querySelector('.geo-pin[data-n="' + (i + 1) + '"]');
+        row.addEventListener('mouseenter', () => pin()?.classList.add('is-active'));
+        row.addEventListener('mouseleave', () => pin()?.classList.remove('is-active'));
+        if (pts[i]) {
+          row.style.cursor = 'zoom-in';
+          row.addEventListener('click', () => zoomToPoint(pts[i].x, pts[i].y));
+        }
       });
+    }
+
+    // Pan/zoom for the results map: a CSS transform on one <g> (translate
+    // then scale, in that order so scaling happens around the SVG origin
+    // and the translate re-centers whatever point was clicked) -- lets the
+    // browser animate and interpolate it for free, no viewBox math needed
+    // per frame. Re-created on every renderMap() call since the old
+    // zoomLayer element is gone once the map is redrawn.
+    let geoZoom = { scale: 1, tx: 0, ty: 0 };
+    let geoZoomLayerEl = null;
+    const GEO_MAP_W = 900, GEO_MAP_H = 450, GEO_ZOOM_MAX = 6, GEO_ZOOM_MIN = 1;
+
+    function applyGeoZoom() {
+      if (!geoZoomLayerEl) return;
+      geoZoomLayerEl.style.transform = `translate(${geoZoom.tx}px, ${geoZoom.ty}px) scale(${geoZoom.scale})`;
+      geoMap.classList.toggle('is-zoomed', geoZoom.scale > 1.001);
+    }
+
+    function zoomToPoint(x, y, scale) {
+      const s = Math.min(GEO_ZOOM_MAX, Math.max(GEO_ZOOM_MIN, scale || 3));
+      geoZoom = { scale: s, tx: GEO_MAP_W / 2 - x * s, ty: GEO_MAP_H / 2 - y * s };
+      applyGeoZoom();
+    }
+
+    function resetGeoZoom() {
+      geoZoom = { scale: 1, tx: 0, ty: 0 };
+      applyGeoZoom();
+    }
+
+    function initGeoZoomPan(layer) {
+      geoZoomLayerEl = layer;
+      resetGeoZoom();
+
+      let dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0, moved = false;
+      const toSvgScale = () => GEO_MAP_W / geoSvg.getBoundingClientRect().width;
+
+      geoSvg.addEventListener('pointerdown', (ev) => {
+        if (geoZoom.scale <= 1.001) return; // nothing to pan at the fitted view
+        dragging = true; moved = false;
+        startX = ev.clientX; startY = ev.clientY;
+        startTx = geoZoom.tx; startTy = geoZoom.ty;
+        geoSvg.setPointerCapture(ev.pointerId);
+      });
+      geoSvg.addEventListener('pointermove', (ev) => {
+        if (!dragging) return;
+        const k = toSvgScale();
+        const dx = (ev.clientX - startX) * k, dy = (ev.clientY - startY) * k;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+        geoZoom.tx = startTx + dx; geoZoom.ty = startTy + dy;
+        applyGeoZoom();
+      });
+      const endDrag = () => { dragging = false; };
+      geoSvg.addEventListener('pointerup', endDrag);
+      geoSvg.addEventListener('pointerleave', endDrag);
+      // Suppress the pin/row click that a drag would otherwise also fire.
+      geoSvg.addEventListener('click', (ev) => { if (moved) { ev.stopPropagation(); moved = false; } }, true);
+
+      geoZoomIn.onclick = () => zoomToPoint(GEO_MAP_W / 2 - geoZoom.tx / geoZoom.scale, GEO_MAP_H / 2 - geoZoom.ty / geoZoom.scale, geoZoom.scale + 1);
+      geoZoomOut.onclick = () => {
+        if (geoZoom.scale <= GEO_ZOOM_MIN + 0.001) return;
+        zoomToPoint(GEO_MAP_W / 2 - geoZoom.tx / geoZoom.scale, GEO_MAP_H / 2 - geoZoom.ty / geoZoom.scale, geoZoom.scale - 1);
+      };
+      geoZoomReset.onclick = resetGeoZoom;
     }
 
     // ---- sample photos (Wikimedia Commons, CC-licensed) and their credits ----

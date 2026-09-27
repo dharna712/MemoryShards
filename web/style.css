@@ -568,6 +568,7 @@ body:has(.try-page) {
 .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
 .proof-item { border-top: 1px solid var(--border); padding-top: 18px; }
 .proof-big { font-size: clamp(52px, 7vw, 96px); font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+.proof-item:first-child .proof-big { color: var(--memory); }
 .proof-item p { color: var(--text-muted); font-size: 14px; max-width: 34ch; margin: 12px 0 0; }
 .proof-limit { font-size: 11.5px; color: var(--text-muted); margin-top: 28px; }
 

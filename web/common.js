@@ -35,6 +35,41 @@
     targets.forEach(el => observer.observe(el));
   })();
 
+  // Proof-section stats count up from 0 the first time they scroll into
+  // view, instead of just appearing — same "motion carries meaning" idea
+  // as the reveals above, sized to the number's own weight in the copy.
+  (function () {
+    const stats = document.querySelectorAll('.proof-big');
+    if (!stats.length) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return; // leave the final text as authored
+
+    const parsed = Array.from(stats).map((el) => {
+      const match = el.textContent.trim().match(/^([\d.]+)(.*)$/);
+      if (!match) return null;
+      const [, numText, suffix] = match;
+      return { el, target: parseFloat(numText), decimals: (numText.split('.')[1] || '').length, suffix };
+    });
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const item = parsed.find((p) => p && p.el === entry.target);
+        if (!entry.isIntersecting || !item) continue;
+        observer.unobserve(entry.target);
+        const duration = 900;
+        const start = performance.now();
+        const step = (now) => {
+          const t = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+          item.el.textContent = (item.target * eased).toFixed(item.decimals) + item.suffix;
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+    }, { threshold: 0.4 });
+    parsed.forEach((p) => p && observer.observe(p.el));
+  })();
+
   // Header gains a bottom border + stronger backdrop once the page has
   // scrolled past the hero, so it reads as "docked" rather than floating.
   (function () {

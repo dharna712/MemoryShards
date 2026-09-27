@@ -532,3 +532,6 @@ index.html embedded 4 unique demo photos as base64 data-URIs 10 times over (hero
 
 ## Error notice polish + contrast fix
 demo-status.error was plain red mono text (#e3695f on white ~= 3.25:1 contrast, fails WCAG AA at normal text size). Now a tinted notice card matching the existing demo-skip-note pattern, with a proper #b3261e-based red (~6.5:1 contrast) and an icon badge. Verified visually.
+
+## Visual: proof-section count-up + accent
+The 94%/98.8%/1 proof stats now count up from 0 the first time they scroll into view (respects prefers-reduced-motion), and the headline stat (94%) is now amber to match the hero's "94% face match" callout and tie the two sections together visually.

@@ -585,3 +585,7 @@ Verified the actual logic directly (inline transform values matched hand-calcula
 
 ## Try page: results summary counts up on reveal
 The photos/events/people summary strip above the timeline used to just appear with its final numbers. Now counts up from 0 with the same ease-out cubic used by the landing page's proof-section stats, so the results moment has a small payoff instead of static text. Verified the easing math directly (0/175/350/525/700ms -> 0/3/5/6/6 for a target of 6, settles exactly on target); couldn't observe the animation actually play in this session's hidden browser pane since Chromium pauses requestAnimationFrame for backgrounded tabs, but the code is the identical, already-shipped pattern from the proof section.
+
+## Try page: more polish -- person card hover, results-summary reveal glow
+- Person cards in the people strip now lift slightly and their avatar ring swaps to the crack-blue accent on hover, matching the tactile hover feel used elsewhere on the site (timeline thumbs, buttons).
+- The results-summary card (photos/events/people counts) now has a one-shot amber glow as it slides in, giving the results moment a small payoff instead of a flat appearance. Pure CSS keyframe animation (no rAF), confirmed applied via computed animation-name.

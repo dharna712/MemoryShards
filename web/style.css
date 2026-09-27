@@ -429,16 +429,19 @@
      y-displacement, so the entire bottom edge (y=100%, same y as the
      transform-origin) stays perfectly flush no matter how far a point is
      from the seam, while the top edge swings open the most. */
-  .zip-flap--left  { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%); transform: skewX(-24deg); background-position: 0 0; }
-  .zip-flap--right { clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%); transform: skewX(24deg); background-position: 0 0; }
+  .zip-flap--left  { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%); transform: skewX(24deg); background-position: 0 0; }
+  .zip-flap--right { clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%); transform: skewX(-24deg); background-position: 0 0; }
   .zip-base--left  { clip-path: polygon(0% 0%, 50% 0%, 50% 100%, 0% 100%); background-position: 0 calc(var(--zip-open) * -1 * var(--sh)); }
   .zip-base--right { clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%); background-position: 0 calc(var(--zip-open) * -1 * var(--sh)); }
-  /* Teeth: small flat ticks along the seam, exposed while open/mid-zip, and
-     faded out entirely once fully closed -- no scar left on the whole photo. */
-  .zip-teeth {
-    position: absolute; left: 50%; top: 2%; bottom: 0; width: 3px; margin-left: -1.5px;
+  /* Teeth: attached to each flap's OWN inner edge via a pseudo-element, so
+     they skew open together with that piece's fabric instead of sitting on
+     a fixed straight center line that would float in the middle of the
+     widening gap. The sealed base has no teeth at all -- interlocked teeth
+     on a real closed zipper aren't visible either. */
+  .zip-flap--left::after, .zip-flap--right::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px;
     background-image: repeating-linear-gradient(to bottom, var(--memory) 0 4px, transparent 4px 11px);
-    opacity: var(--zip-open); z-index: 2; pointer-events: none;
+    opacity: var(--zip-open); pointer-events: none;
   }
   /* Pull travels bottom (fully open, like a real zipper's resting/unzipped
      position) to top (fully closed) -- scrolling further "zips it up". */

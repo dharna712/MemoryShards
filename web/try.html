@@ -704,8 +704,23 @@
             const nPeople = (data.people || []).length;
             const sum = document.createElement('div');
             sum.className = 'run-summary';
-            sum.innerHTML = `<span><b>${nPhotos}</b>photos</span><span><b>${data.events.length}</b>events</span><span><b>${nPeople}</b>${nPeople === 1 ? 'person' : 'people'}</span>`;
+            sum.innerHTML = `<span><b data-count="${nPhotos}">0</b>photos</span><span><b data-count="${data.events.length}">0</b>events</span><span><b data-count="${nPeople}">0</b>${nPeople === 1 ? 'person' : 'people'}</span>`;
             results.prepend(sum);
+            // Count up on reveal, same easing as the landing page's proof
+            // stats -- the results moment gets a small payoff instead of
+            // the numbers just appearing static.
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            sum.querySelectorAll('b[data-count]').forEach((el) => {
+              const target = parseInt(el.dataset.count, 10);
+              if (reduceMotion || !target) { el.textContent = target; return; }
+              const duration = 700, start = performance.now();
+              const step = (now) => {
+                const t = Math.min(1, (now - start) / duration);
+                el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+                if (t < 1) requestAnimationFrame(step);
+              };
+              requestAnimationFrame(step);
+            });
             renderSkipNote(data.skipped);
           };
           const showExtras = () => { renderMap(data.events); renderCredits(); results.scrollIntoView({ behavior: 'smooth', block: 'start' }); };

@@ -30,34 +30,38 @@ def find_photos(photos_dir):
 
 def build_timeline(photos_dir, caption=True, online_places=False):
     """Returns (timeline, skipped) where:
-    - timeline: list of events, sorted chronologically —
-      [{'start_time': datetime, 'place': str, 'caption': str|None,
+    - timeline: list of events, sorted chronologically, with any undated
+      events (see below) appended at the end —
+      [{'start_time': datetime|None, 'place': str, 'caption': str|None,
         'photo_count': int, 'photos': [str, ...]}, ...]
-    - skipped: [{'filename': str, 'reason': str}, ...] — photos with no
-      usable EXIF (no timestamp or no GPS) can't be placed on a timeline,
-      same as a real system would face, but callers (the API, in
-      particular) need to know WHICH photos and WHY rather than just a
-      silent drop, so uploaders aren't left guessing why their count of
-      events doesn't match their count of photos."""
+    - skipped: [{'filename': str, 'reason': str}, ...] — photos that
+      couldn't even be read (corrupt file, unsupported format). Photos
+      that ARE readable but have no timestamp/GPS in EXIF (e.g. shared
+      over WhatsApp, which strips it) are NOT skipped anymore — they
+      still can't be placed chronologically or geographically, but they
+      still have faces worth recognizing, so each becomes its own
+      standalone "undated" event instead of being dropped silently."""
     photo_paths = find_photos(photos_dir)
 
     records = []
+    undated = []
     skipped = []
     for path in photo_paths:
-        meta = extract_photo_metadata(path)
+        try:
+            meta = extract_photo_metadata(path)
+        except Exception:
+            skipped.append({"filename": path.name, "reason": "couldn't read photo (corrupt or unsupported file)"})
+            continue
         has_time, has_gps = bool(meta["timestamp"]), meta["lat"] is not None
         if has_time and has_gps:
             records.append(meta)
         else:
-            reason = (
-                "no timestamp or GPS in EXIF" if not has_time and not has_gps
-                else "no timestamp in EXIF" if not has_time
-                else "no GPS in EXIF"
-            )
-            skipped.append({"filename": path.name, "reason": reason})
+            undated.append(meta)
 
+    if undated:
+        print(f"[fusion] {len(undated)}/{len(photo_paths)} photos had no usable EXIF timestamp/GPS — kept as undated events")
     if skipped:
-        print(f"[fusion] skipped {len(skipped)}/{len(photo_paths)} photos (no usable EXIF timestamp/GPS)")
+        print(f"[fusion] skipped {len(skipped)}/{len(photo_paths)} unreadable photos")
 
     records = cluster_events(records)
 
@@ -95,12 +99,26 @@ def build_timeline(photos_dir, caption=True, online_places=False):
         })
 
     timeline.sort(key=lambda e: e["start_time"])
+
+    for meta in undated:
+        event_caption = caption_event([meta["path"]]) if caption else None
+        timeline.append({
+            "start_time": None,
+            "place": "Unknown location",
+            "lat": None,
+            "lon": None,
+            "caption": event_caption,
+            "photo_count": 1,
+            "photos": [meta["path"]],
+            "standalone": True,
+        })
+
     return timeline, skipped
 
 
 def print_timeline(timeline, skipped=None):
     for event in timeline:
-        time_str = event["start_time"].strftime("%d %b, %I:%M %p")
+        time_str = event["start_time"].strftime("%d %b, %I:%M %p") if event["start_time"] else "Undated"
         caption_str = f" — {event['caption']}" if event["caption"] else ""
         count_str = f" ({event['photo_count']} photos)" if event["photo_count"] > 1 else ""
         print(f"  {time_str}  {event['place']}{caption_str}{count_str}")

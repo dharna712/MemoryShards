@@ -53,12 +53,12 @@ def thumbnail_base64(photo_path):
 def event_to_json(event, photo_to_people):
     thumbnails = [thumbnail_base64(p) for p in event["photos"][:MAX_THUMBNAILS_PER_EVENT]]
     return {
-        "start_time": event["start_time"].isoformat(),
+        "start_time": event["start_time"].isoformat() if event["start_time"] else None,
         # %-d avoids a leading zero on the day; year included — the
         # original format silently dropped it, which is genuinely
         # confusing once photos span more than one year (this dataset
         # spans 2009-2019)
-        "display_time": event["start_time"].strftime("%d %b %Y, %I:%M %p"),
+        "display_time": event["start_time"].strftime("%d %b %Y, %I:%M %p") if event["start_time"] else "Undated",
         "place": event["place"],
         "lat": event["lat"],
         "lon": event["lon"],
@@ -98,8 +98,7 @@ def timeline():
                 "events": [],
                 "skipped": skipped,
                 "people": [],
-                "message": "No usable photos — none had both a timestamp and GPS "
-                           "location in their EXIF data.",
+                "message": "No usable photos — none of the uploaded files could be read.",
             })
 
         # Recognition is an enrichment: if it fails (missing checkpoint,

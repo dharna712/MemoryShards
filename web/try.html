@@ -297,24 +297,34 @@
     function renderEvents(events) {
       results.innerHTML = '';
       emptyState.hidden = events.length > 0;
-      events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      const dated = events.filter((e) => e.start_time);
+      const undated = events.filter((e) => !e.start_time);
+      dated.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      const ordered = dated.concat(undated);
       const perDay = {};
-      events.forEach((e) => {
+      dated.forEach((e) => {
         const day = e.start_time.slice(0, 10);
         perDay[day] = perDay[day] || { events: 0, photos: 0 };
         perDay[day].events += 1;
         perDay[day].photos += e.photo_count;
       });
       let lastDay = null;
-      events.forEach((e, i) => {
-        const day = e.start_time.slice(0, 10);
-        if (day !== lastDay) {
+      let undatedHeaderShown = false;
+      ordered.forEach((e, i) => {
+        const day = e.start_time ? e.start_time.slice(0, 10) : null;
+        if (day !== null && day !== lastDay) {
           lastDay = day;
           const head = document.createElement('div');
           head.className = 'tl-day';
           const label = new Date(day + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
           const st = perDay[day];
           head.innerHTML = '<b>' + label + '</b><span class="mono">' + st.events + (st.events === 1 ? ' stop' : ' stops') + ' · ' + st.photos + (st.photos === 1 ? ' photo' : ' photos') + '</span>';
+          results.appendChild(head);
+        } else if (day === null && !undatedHeaderShown) {
+          undatedHeaderShown = true;
+          const head = document.createElement('div');
+          head.className = 'tl-day';
+          head.innerHTML = '<b>Undated</b><span class="mono">' + undated.length + (undated.length === 1 ? ' photo' : ' photos') + ' · no timestamp/GPS in EXIF</span>';
           results.appendChild(head);
         }
         const row = document.createElement('div');
@@ -326,7 +336,7 @@
           ? ` · <button type="button" class="tl-expand">${e.photo_count} photos ▾</button>`
           : '';
         row.innerHTML =
-          '<div class="tl-time">' + e.display_time.split(', ')[1] + '</div>' +
+          '<div class="tl-time">' + (e.start_time ? e.display_time.split(', ')[1] : '—') + '</div>' +
           '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')' + (morphActive ? ';view-transition-name:ev-' + i : '') + '"></div>' +
           '<div class="tl-label">' + (e.caption || '(no caption)') +
           '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span>' +

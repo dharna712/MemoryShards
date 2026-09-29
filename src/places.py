@@ -77,6 +77,8 @@ def online_place(lat, lon):
 
 
 def place_label(lat, lon, online=False):
+    if lat is None or lon is None:
+        return "Unknown location"
     if online:
         label = online_place(lat, lon)
         if label:

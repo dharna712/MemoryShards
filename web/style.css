@@ -365,39 +365,39 @@
     font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted);
   }
 
-  /* ---------------- MEMORY REEL ---------------- */
+  /* ---------------- MEMORY REEL: cylindrical helix ----------------
+     Each card sits at angle a = i*90deg around a vertical axis and height
+     y = i*rise, so spinning the ring also "screws" it into a spiral
+     staircase instead of a flat 4-sided prism. Technique ported from
+     UI-Lab's Helix gallery pattern (src/patterns/three-d/HelixGallery.tsx);
+     angle/brightness/blur are computed in JS per frame since they depend
+     on live drag/idle state, not a fixed CSS keyframe. */
   .reel-section { padding: 64px 0 12px; text-align: center; }
   .reel-section h2 { font-size: 22px; margin-bottom: 6px; }
   .reel-section .section-sub { color: var(--text-muted); font-size: 14px; max-width: 52ch; margin: 0 auto 36px; }
-  .reel-stage { perspective: 1300px; height: 300px; display: flex; align-items: center; justify-content: center; }
+  .reel-stage {
+    perspective: 1300px; height: 320px; display: flex; align-items: center; justify-content: center;
+    cursor: grab; touch-action: pan-y; user-select: none;
+  }
+  .reel-stage:active { cursor: grabbing; }
   .reel-ring {
     position: relative; width: 210px; height: 270px;
     transform-style: preserve-3d;
-    animation: spin-ring 22s linear infinite;
   }
-  .reel-stage:hover .reel-ring, .reel-stage:focus-within .reel-ring { animation-play-state: paused; }
-  @keyframes spin-ring { to { transform: rotateY(360deg); } }
   .reel-card {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
     border-radius: 12px; box-shadow: var(--shadow);
     border: 1px solid rgba(255,255,255,0.08);
     display: flex; align-items: flex-end; justify-content: center; padding: 12px;
-    backface-visibility: hidden;
+    backface-visibility: visible;
   }
-  .reel-card:nth-child(1) { transform: rotateY(0deg) translateZ(250px); }
-  .reel-card:nth-child(2) { transform: rotateY(90deg) translateZ(250px); }
-  .reel-card:nth-child(3) { transform: rotateY(180deg) translateZ(250px); }
-  .reel-card:nth-child(4) { transform: rotateY(270deg) translateZ(250px); }
   .reel-cap {
     font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #fff;
     background: rgba(6,8,12,0.55); backdrop-filter: blur(2px);
     padding: 5px 10px; border-radius: 7px; letter-spacing: 0.02em;
   }
   .reel-hint { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 20px; }
-  @media (prefers-reduced-motion: reduce) {
-    .reel-ring { animation: none; transform: rotateY(0deg); }
-  }
 
   /* ---------------- ZIP PANEL (a real zipper, driven by scroll position) ---------------- */
   /* --zip-open: 1 = open (photo split, teeth showing), 0 = zipped closed (whole

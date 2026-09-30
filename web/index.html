@@ -221,15 +221,15 @@
   <section class="reel-section">
     <h2 class="reveal">Still turning over</h2>
     <p class="section-sub reveal">The same four fragments, no longer scattered — just frames in one reel now.</p>
-    <div class="reel-stage" tabindex="0">
-      <div class="reel-ring">
+    <div class="reel-stage" id="reelStage" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photo helix of the day's four moments. Drag or use arrow keys to spin.">
+      <div class="reel-ring" id="reelRing">
         <div class="reel-card" style="background-image:url('media/demo-2.jpg')"><span class="reel-cap">Marine Drive · 10:30 AM</span></div>
         <div class="reel-card" style="background-image:url('media/demo-1.jpg')"><span class="reel-cap">Gateway of India · 11:15 AM</span></div>
         <div class="reel-card" style="background-image:url('media/demo-3.jpg')"><span class="reel-cap">Lunch · 2:00 PM</span></div>
         <div class="reel-card" style="background-image:url('media/demo-4.jpg')"><span class="reel-cap">Hotel · 6:30 PM</span></div>
       </div>
     </div>
-    <div class="reel-hint">hover to pause</div>
+    <div class="reel-hint">Drag to spin · hover to pause</div>
   </section>
 </div>
 
@@ -409,6 +409,74 @@
     };
     window.addEventListener('scroll', update, { passive: true });
     update();
+  })();
+
+  // Memory reel: cylindrical helix, ported from UI-Lab's Helix gallery
+  // pattern. Each card sits at angle i*90deg with height i*rise, so
+  // spinning the ring also "screws" it into a spiral. Idle auto-rotate,
+  // pauses on hover/focus, drag or arrow keys to spin manually.
+  (function () {
+    const stage = document.getElementById('reelStage');
+    const ring = document.getElementById('reelRing');
+    if (!stage || !ring) return;
+    const cards = Array.from(ring.children);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const STEP = 90, RADIUS = 125, RISE = 34;
+    // center the stack of rises so it sits vertically centered in the stage
+    const totalRise = (cards.length - 1) * RISE;
+
+    let angle = 0;
+    let paused = false;
+    let dragging = false;
+    let lastX = 0;
+
+    function render() {
+      cards.forEach((card, i) => {
+        const a = i * STEP;
+        const y = i * RISE - totalRise / 2;
+        const facing = Math.cos(((a + angle) * Math.PI) / 180);
+        card.style.transform = `translateY(${y}px) rotateY(${a}deg) translateZ(${RADIUS}px)`;
+        card.style.filter = `brightness(${0.55 + Math.max(0, facing) * 0.55}) blur(${facing < 0 ? 1.5 : 0}px)`;
+      });
+      ring.style.transform = `rotateY(${angle}deg)`;
+    }
+
+    if (reduceMotion) {
+      render();
+      return;
+    }
+
+    let raf = null;
+    function tick() {
+      if (!paused && !dragging) angle += 0.06;
+      render();
+      raf = requestAnimationFrame(tick);
+    }
+
+    stage.addEventListener('pointerenter', () => { paused = true; });
+    stage.addEventListener('pointerleave', () => { paused = false; });
+    stage.addEventListener('focusin', () => { paused = true; });
+    stage.addEventListener('focusout', () => { paused = false; });
+
+    stage.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      lastX = e.clientX;
+      stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      angle += (e.clientX - lastX) * 0.4;
+      lastX = e.clientX;
+    });
+    stage.addEventListener('pointerup', () => { dragging = false; });
+    stage.addEventListener('pointercancel', () => { dragging = false; });
+
+    stage.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { angle -= STEP; }
+      if (e.key === 'ArrowLeft') { angle += STEP; }
+    });
+
+    tick();
   })();
 </script>
 </body>

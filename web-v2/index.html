@@ -439,12 +439,14 @@
     height: 150px;
     border-radius: 10px;
     margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background:
-      radial-gradient(circle at 30% 25%, rgba(255,255,255,0.12), transparent 55%),
-      linear-gradient(155deg, var(--hue1, #ff9d5c), var(--hue2, #6b2f1a));
+    overflow: hidden;
+    background: linear-gradient(155deg, var(--hue1, #ff9d5c), var(--hue2, #6b2f1a));
+  }
+  .stair-step .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
   .stair-step .thumb svg {
     width: 56px;
@@ -560,44 +562,44 @@
   <div class="stair-pin">
     <div class="stair-kicker">THE TIMELINE — CLIMB IT</div>
     <div class="stair-world" id="stairWorld">
-      <div class="stair-step" data-i="0" style="--hue1:#ffb26b; --hue2:#7a3a1a;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="24" cy="16" r="7"/><path d="M4 38c4-6 10-9 20-9s16 3 20 9"/><path d="M2 30c3-2 6-2 9 0s6 2 9 0 6-2 9 0 6 2 9 0 6-2 9 0"/></svg></div>
+      <div class="stair-step" data-i="0">
+        <div class="thumb"><img src="media/stair1.jpg" alt="" loading="lazy"></div>
         <div class="date">14 MAR 2019 · 06:42 AM</div>
         <p class="cap">Beach day, reconstructed from 14 photos</p>
         <div class="edge"></div>
       </div>
-      <div class="stair-step" data-i="1" style="--hue1:#ff9d7a; --hue2:#5c2a2a;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="24" cy="26" r="12"/><path d="M24 8v6M14 10l3 5M34 10l-3 5"/></svg></div>
+      <div class="stair-step" data-i="1">
+        <div class="thumb"><img src="media/stair2.jpg" alt="" loading="lazy"></div>
         <div class="date">02 JUL 2019 · 07:15 PM</div>
-        <p class="cap">Rooftop dinner, 3 people recognized</p>
+        <p class="cap">Temple festival, 3 people recognized</p>
         <div class="edge"></div>
       </div>
-      <div class="stair-step" data-i="2" style="--hue1:#ffc98b; --hue2:#6b3a24;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="17" cy="22" r="8"/><circle cx="31" cy="22" r="8"/><path d="M17 32c0 4 3 6 7 6s7-2 7-6" stroke-dasharray="2 3"/></svg></div>
+      <div class="stair-step" data-i="2">
+        <div class="thumb"><img src="media/stair3.jpg" alt="" loading="lazy"></div>
         <div class="date">19 DEC 2019 · 09:03 AM</div>
         <p class="cap">Undated set, faces matched anyway</p>
         <div class="edge"></div>
       </div>
-      <div class="stair-step" data-i="3" style="--hue1:#ff8f6b; --hue2:#4a2418;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><path d="M4 30h40"/><path d="M12 30a12 12 0 0 1 24 0" stroke-dasharray="0"/></svg></div>
+      <div class="stair-step" data-i="3">
+        <div class="thumb"><img src="media/stair4.jpg" alt="" loading="lazy"></div>
         <div class="date">08 APR 2020 · 05:50 PM</div>
-        <p class="cap">Balcony sunset, clustered from 6 shots</p>
+        <p class="cap">Ruins at golden hour, clustered from 6 shots</p>
         <div class="edge"></div>
       </div>
-      <div class="stair-step" data-i="4" style="--hue1:#ffd39b; --hue2:#7a4a2a;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><path d="M24 12L4 20l20 8 20-8z"/><path d="M12 24v9c0 3 6 6 12 6s12-3 12-6v-9"/></svg></div>
+      <div class="stair-step" data-i="4">
+        <div class="thumb"><img src="media/stair5.jpg" alt="" loading="lazy"></div>
         <div class="date">27 SEP 2021 · 11:20 AM</div>
-        <p class="cap">Campus reunion, one caption for eleven photos</p>
+        <p class="cap">Golden Temple, one caption for eleven photos</p>
         <div class="edge"></div>
       </div>
-      <div class="stair-step" data-i="5" style="--hue1:#ffab7a; --hue2:#5c3020;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><path d="M24 4v10M24 34v10M4 24h10M34 24h10M10 10l7 7M31 31l7 7M38 10l-7 7M17 31l-7 7"/></svg></div>
+      <div class="stair-step" data-i="5">
+        <div class="thumb"><img src="media/stair6.jpg" alt="" loading="lazy"></div>
         <div class="date">03 JAN 2023 · 12:00 AM</div>
-        <p class="cap">New Year, place resolved from GPS alone</p>
+        <p class="cap">New Year on the slopes, place resolved from GPS alone</p>
         <div class="edge"></div>
       </div>
-      <div class="stair-step" data-i="6" style="--hue1:#ffe0b0; --hue2:#8a5a30;">
-        <div class="thumb"><svg viewBox="0 0 48 48"><path d="M24 6l6 12-6 6-6-6z"/><path d="M12 24l6 12 6-6-6-6z"/><path d="M36 24l-6 12-6-6 6-6z"/></svg></div>
+      <div class="stair-step" data-i="6">
+        <div class="thumb"><img src="media/stair7.jpg" alt="" loading="lazy"></div>
         <div class="date">30 SEP 2026 · NOW</div>
         <p class="cap">Every fragment, finally in order</p>
         <div class="edge"></div>
@@ -673,105 +675,69 @@
     buildScene();
   }
 
-  // ---- build the target silhouette scene on an offscreen canvas, then
-  // sample it into particle target points. A drawn scene (not a photo) so
-  // the "memory" being reconstructed is something the site itself made.
+  // ---- build the target from a REAL photo, sampled for both position and
+  // color, so ash resolves into an actual picture (not a drawn silhouette).
+  // The photo sits in a horizon band along the bottom of the frame, clear
+  // of the vertical-center band the headline occupies — same non-collision
+  // principle as before, just filled with a real image now.
   let particles = [];
+  const heroImg = new Image();
+  let heroImgReady = false;
+  heroImg.onload = () => { heroImgReady = true; buildScene(); };
+  heroImg.src = 'media/hero.jpg';
 
   function buildScene() {
+    if (!heroImgReady) return; // resize() already sized the canvas; buildScene reruns onload
     const sceneW = Math.min(W, 1400);
     const sceneH = H;
     const off = document.createElement('canvas');
     off.width = sceneW;
     off.height = sceneH;
     const octx = off.getContext('2d');
-    octx.fillStyle = '#fff';
 
-    // Everything lives in a horizon strip along the bottom of the frame,
-    // deliberately clear of the vertical-center band the headline sits in
-    // (.hero-copy is centered) — so converged particles never fight the
-    // text for the same space, only frame it from below.
-    const groundY = sceneH * 0.88;
-    const cx = sceneW * 0.5;
-    const band = sceneH * 0.22; // scale factor for everything below
-
-    // moon, low on the horizon rather than high in the sky
-    octx.beginPath();
-    octx.arc(cx, groundY - band * 0.75, band * 0.5, 0, Math.PI * 2);
-    octx.fill();
-
-    // a few faint stars, only in the narrow strip just above the hills
-    for (let i = 0; i < 22; i++) {
-      const sx = Math.random() * sceneW;
-      const sy = groundY - band * (0.9 + Math.random() * 0.9);
-      const r = Math.random() * 1.3 + 0.4;
-      octx.beginPath();
-      octx.arc(sx, sy, r, 0, Math.PI * 2);
-      octx.fill();
+    // photo fills a band from ~40% down to the bottom edge — bigger than a
+    // thin strip since this is now real content worth seeing clearly, but
+    // still clear of .hero-copy's centered text above it.
+    // Crop the SOURCE to the band's aspect ratio first (object-fit:cover,
+    // done manually), then draw it to exactly fill the band — nothing is
+    // ever drawn or sampled outside [bandTop, sceneH], by construction,
+    // rather than drawing an oversized image and clamping after the fact
+    // (which previously let the photo's top edge bleed into the headline's
+    // zone above the band).
+    const bandTop = sceneH * 0.4;
+    const bandH = sceneH - bandTop;
+    const bandAspect = sceneW / bandH;
+    const imgAspect = heroImg.width / heroImg.height;
+    let sx, sy, sW, sH;
+    if (imgAspect > bandAspect) {
+      sH = heroImg.height;
+      sW = sH * bandAspect;
+      sx = (heroImg.width - sW) / 2;
+      sy = 0;
+    } else {
+      sW = heroImg.width;
+      sH = sW / bandAspect;
+      sx = 0;
+      sy = (heroImg.height - sH) / 2;
     }
+    octx.drawImage(heroImg, sx, sy, sW, sH, 0, bandTop, sceneW, bandH);
 
-    // rolling hill silhouette
-    octx.beginPath();
-    octx.moveTo(0, groundY + band * 0.3);
-    octx.quadraticCurveTo(sceneW * 0.22, groundY - band * 0.45, sceneW * 0.42, groundY - band * 0.08);
-    octx.quadraticCurveTo(sceneW * 0.58, groundY + band * 0.3, sceneW * 0.74, groundY - band * 0.3);
-    octx.quadraticCurveTo(sceneW * 0.9, groundY - band * 0.6, sceneW, groundY - band * 0.15);
-    octx.lineTo(sceneW, sceneH);
-    octx.lineTo(0, sceneH);
-    octx.closePath();
-    octx.fill();
-
-    // two trees, bigger and bolder so they survive point-sampling
-    function tree(tx, ty, scale) {
-      octx.beginPath();
-      octx.moveTo(tx - 4 * scale, ty);
-      octx.lineTo(tx - 2 * scale, ty - 34 * scale);
-      octx.lineTo(tx + 2 * scale, ty - 34 * scale);
-      octx.lineTo(tx + 4 * scale, ty);
-      octx.closePath();
-      octx.fill();
-      for (let i = 0; i < 3; i++) {
-        octx.beginPath();
-        octx.arc(tx, ty - (38 + i * 20) * scale, (22 - i * 3) * scale, 0, Math.PI * 2);
-        octx.fill();
-      }
-    }
-    tree(sceneW * 0.14, groundY + band * 0.05, 1.5);
-    tree(sceneW * 0.87, groundY - band * 0.02, 1.25);
-
-    // a bench + two seated figures, dead center — the "memory" — sized up
-    // for legibility since these are the smallest shapes in the scene
-    const bx = cx, by = groundY - band * 0.03;
-    octx.fillRect(bx - 46, by - 3, 92, 6);
-    octx.fillRect(bx - 40, by, 6, 20);
-    octx.fillRect(bx + 34, by, 6, 20);
-
-    function figure(fx, fy, scale) {
-      octx.beginPath();
-      octx.arc(fx, fy - 27 * scale, 8 * scale, 0, Math.PI * 2);
-      octx.fill();
-      octx.beginPath();
-      octx.moveTo(fx - 9 * scale, fy);
-      octx.quadraticCurveTo(fx, fy - 27 * scale, fx + 9 * scale, fy);
-      octx.closePath();
-      octx.fill();
-    }
-    figure(bx - 13, by - 2, 1.35);
-    figure(bx + 15, by - 2, 1.25);
-
-    const img = octx.getImageData(0, 0, sceneW, sceneH).data;
-    const stride = W < 700 ? 5 : 3.2;
+    const imgData = octx.getImageData(0, 0, sceneW, sceneH).data;
+    const stride = W < 700 ? 6 : 4;
+    const x0 = 0, x1 = sceneW;
+    const y0 = bandTop, y1 = sceneH;
     const pts = [];
-    for (let y = 0; y < sceneH; y += stride) {
-      for (let x = 0; x < sceneW; x += stride) {
+    for (let y = y0; y < y1; y += stride) {
+      for (let x = x0; x < x1; x += stride) {
         const idx = ((y | 0) * sceneW + (x | 0)) * 4;
-        if (img[idx + 3] > 120) {
-          pts.push({ x: x + (sceneW < W ? (W - sceneW) / 2 : 0), y });
-        }
+        pts.push({
+          x: x + (sceneW < W ? (W - sceneW) / 2 : 0), y,
+          r: imgData[idx], g: imgData[idx + 1], b: imgData[idx + 2],
+        });
       }
     }
     // cap point count for perf
-    const MAX = 3200;
+    const MAX = 4200;
     let sampled = pts;
     if (pts.length > MAX) {
       sampled = [];
@@ -785,8 +751,8 @@
       sx: Math.random() * W,
       sy: Math.random() * H,
       x: 0, y: 0,
-      size: Math.random() * 1.6 + 0.6,
-      hueJ: Math.random() * 14 - 7,
+      r: p.r, g: p.g, b: p.b,
+      size: Math.random() * 1.7 + 0.7,
       phase: Math.random() * Math.PI * 2,
       speed: Math.random() * 0.6 + 0.3,
     }));
@@ -825,13 +791,16 @@
       const x = p.sx + (p.tx - p.sx) * e + jx;
       const y = p.sy + (p.ty - p.sy) * e + jy;
 
-      const hue = 22 + p.hueJ + e * 10;
-      const light = 45 + e * 30;
+      // scattered = uniform ember color; resolved = the photo's real pixel
+      // color at that point — the ash visibly "becomes" the picture
+      const rr = Math.round(255 + (p.r - 255) * e);
+      const gg = Math.round(140 + (p.g - 140) * e);
+      const bb = Math.round(60 + (p.b - 60) * e);
       const alpha = 0.35 + e * 0.65;
       const size = p.size * (1.4 - e * 0.5);
 
       ctx.beginPath();
-      ctx.fillStyle = `hsla(${hue}, 90%, ${light}%, ${alpha})`;
+      ctx.fillStyle = `rgba(${rr}, ${gg}, ${bb}, ${alpha})`;
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
     }

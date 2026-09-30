@@ -366,30 +366,30 @@
   }
 
   /* ---------------- MEMORY REEL: cylindrical helix ----------------
-     Each card sits at angle a = i*(360/count)deg around a vertical axis
-     and height y = i*rise, so spinning the ring also "screws" it into a
-     spiral staircase instead of a flat prism. Technique ported from
+     Each card sits at angle a = i*90deg around a vertical axis and height
+     y = i*rise, so spinning the ring also "screws" it into a spiral
+     staircase instead of a flat 4-sided prism. Technique ported from
      UI-Lab's Helix gallery pattern (src/patterns/three-d/HelixGallery.tsx);
      angle/brightness/blur are computed in JS per frame since they depend
      on live drag/idle state, not a fixed CSS keyframe. */
   .reel-section { padding: 64px 0 12px; text-align: center; }
   .reel-section h2 { font-size: 22px; margin-bottom: 6px; }
-  .reel-section .section-sub { color: var(--text-muted); font-size: 14px; max-width: 56ch; margin: 0 auto 36px; }
+  .reel-section .section-sub { color: var(--text-muted); font-size: 14px; max-width: 52ch; margin: 0 auto 36px; }
   .reel-stage {
-    perspective: 1600px; height: 460px; display: flex; align-items: center; justify-content: center;
+    perspective: 1300px; height: 320px; display: flex; align-items: center; justify-content: center;
     cursor: grab; touch-action: pan-y; user-select: none;
   }
   .reel-stage:active { cursor: grabbing; }
   .reel-ring {
-    position: relative; width: 260px; height: 320px;
+    position: relative; width: 210px; height: 270px;
     transform-style: preserve-3d;
   }
   .reel-card {
     position: absolute; inset: 0;
     background-size: cover; background-position: center;
-    border-radius: 14px; box-shadow: var(--shadow);
+    border-radius: 12px; box-shadow: var(--shadow);
     border: 1px solid rgba(255,255,255,0.08);
-    display: flex; align-items: flex-end; justify-content: center; padding: 14px;
+    display: flex; align-items: flex-end; justify-content: center; padding: 12px;
     backface-visibility: visible;
   }
   .reel-cap {

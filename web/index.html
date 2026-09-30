@@ -220,18 +220,13 @@
 <div class="wrap above-stack">
   <section class="reel-section">
     <h2 class="reveal">Still turning over</h2>
-    <p class="section-sub reveal">Nine fragments from two different afternoons — a day in Mumbai, a market run in Melbourne — each correctly kept on its own.</p>
-    <div class="reel-stage" id="reelStage" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photo helix of two reconstructed outings. Drag or use arrow keys to spin.">
+    <p class="section-sub reveal">The same four fragments, no longer scattered — just frames in one reel now.</p>
+    <div class="reel-stage" id="reelStage" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photo helix of the day's four moments. Drag or use arrow keys to spin.">
       <div class="reel-ring" id="reelRing">
         <div class="reel-card" style="background-image:url('media/demo-2.jpg')"><span class="reel-cap">Marine Drive · 10:30 AM</span></div>
         <div class="reel-card" style="background-image:url('media/demo-1.jpg')"><span class="reel-cap">Gateway of India · 11:15 AM</span></div>
         <div class="reel-card" style="background-image:url('media/demo-3.jpg')"><span class="reel-cap">Lunch · 2:00 PM</span></div>
         <div class="reel-card" style="background-image:url('media/demo-4.jpg')"><span class="reel-cap">Hotel · 6:30 PM</span></div>
-        <div class="reel-card" style="background-image:url('media/reel-33.jpg')"><span class="reel-cap">Queen Victoria Market · Melbourne</span></div>
-        <div class="reel-card" style="background-image:url('media/reel-34.jpg')"><span class="reel-cap">Green apples</span></div>
-        <div class="reel-card" style="background-image:url('media/reel-35.jpg')"><span class="reel-cap">Cucumbers</span></div>
-        <div class="reel-card" style="background-image:url('media/reel-36.jpg')"><span class="reel-cap">Mandarins</span></div>
-        <div class="reel-card" style="background-image:url('media/reel-37.jpg')"><span class="reel-cap">Apples</span></div>
       </div>
     </div>
     <div class="reel-hint">Drag to spin · hover to pause</div>
@@ -251,7 +246,6 @@
       <span class="source-chip"><b>Gateway of India</b> — Sharique Jamal, CC BY-SA 4.0</span>
       <span class="source-chip"><b>Restaurant thali</b> — Kanikatwl, CC BY-SA 4.0</span>
       <span class="source-chip"><b>Four Seasons Mumbai</b> — Creater903a, CC0</span>
-      <span class="source-chip"><b>Queen Victoria Market, Melbourne</b> — Dietmar Rabich, CC BY-SA 4.0</span>
     </div>
   </footer>
 </div>
@@ -427,7 +421,7 @@
     if (!stage || !ring) return;
     const cards = Array.from(ring.children);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const STEP = 360 / cards.length, RADIUS = 190, RISE = 32;
+    const STEP = 90, RADIUS = 125, RISE = 34;
     // center the stack of rises so it sits vertically centered in the stage
     const totalRise = (cards.length - 1) * RISE;
 

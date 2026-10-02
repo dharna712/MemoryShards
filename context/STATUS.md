@@ -605,3 +605,14 @@ In passing during the first attempt, also explored replacing the live site's mem
 
 ## Render auto-deploy found to be unreliable on the `memoryshards` service
 Discovered the live site's Render service was NOT auto-deploying on push -- several commits (including the undated-photos fix above) sat pushed to GitHub but never went live until manually triggered via the Render API. Cause not diagnosed (webhook-side, outside the repo). Practical fix going forward: manually trigger a deploy after every push to this service rather than trusting the webhook -- confirmed twice this session that a push alone did not update the live site.
+
+## 2026-10-03: MARE-style makeover, built beside the original (branch `mare-makeover`)
+
+Third visual attempt, this time as an editorial "photo album being developed" (warm paper, ink, one clay accent, Instrument Serif + Geist, mono only for data). The two earlier rejected v2s felt heavy/abstract or were a 3D rebuild; this one keeps the "shards" idea (the project name) and real photographs, and stays calm.
+
+**The original is preserved.** `web/index.html`, `web/try.html`, `web/style.css`, `web/common.js` are unchanged and tagged `v2-original-site`. The makeover lives only in `web/mare/` (`index.html`, `try.html`, `mare.css`, `try-skin.css`, `mare.js`, `common.js`, `fonts/`, `vendor/`). Revert = delete `web/mare/` or `git checkout v2-original-site`. Each version links to the other from its footer.
+
+- Pitch page: the hero photograph starts in the original 8 shards and rejoins as you scroll, then opens to full bleed; word-by-word statement; the five stages as a pinned horizontal essay of plates (Fig. 01-05, each with its "bar", using real photos and honest annotations only: EXIF field names, a box on a real face, a real two-photo street sequence, a real caption string); the proof numerals (94%, 98.8%, 1) and the limits line, copied from the original; the example timeline as an index with cursor-following photo previews; credits kept. Dropped: the zip panel and the 4-sided reel (the shard hero replaces the zip idea).
+- Try page: same markup and the same inline script and API calls as the original (copied by `tools/build_mare_try.py`, paths fixed); only the look changed through `try-skin.css` (variables, serif headings, flat square components). Verified end to end with the 11 sample photos against the real API (15 timeline rows, 2 people, map).
+- Self-hosted fonts and GSAP/ScrollTrigger/Lenis (no CDN). Laptop-only; the short-laptop (720px) case checked. Not pushed.
+- Known: detector findings left standing on purpose are the chosen look (cream paper, Instrument Serif/Geist, italic accent words), light text over the full-bleed photo, and display type with tight leading. Hero photo is a CC BY-SA sample (credited on the page).

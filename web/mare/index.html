@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3efe6">
+<meta name="description" content="MemoryShards pieces scattered photos back into the day they came from: EXIF, event clustering, face recognition and captioning, live.">
+<title>MemoryShards: piece the day back together</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2315110e'/%3E%3Cpolygon points='52,18 82,42 68,86 32,86 18,42' fill='none' stroke='%23c9622f' stroke-width='6'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="mare.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="wordmark" href="index.html" aria-label="MemoryShards, home">Memory<em>Shards</em></a>
+  <nav class="top-nav" aria-label="Sections">
+    <a href="#pipeline">How it works</a>
+    <a href="#timeline">Example</a>
+    <a href="try.html">Try it</a>
+  </nav>
+  <div class="byline">AI memory reconstruction</div>
+</header>
+
+<main>
+  <!-- HERO: shards of one photograph rejoin as you scroll, then the picture opens to full bleed -->
+  <section class="hero" aria-labelledby="h1">
+    <div class="hero-pin">
+      <h1 id="h1" class="hero-title">
+        <span class="mask"><span class="line">Piece it</span></span>
+        <span class="mask"><span class="line"><em>together.</em></span></span>
+      </h1>
+
+      <div class="stage" id="stage" role="img" aria-label="A rocky cove with turquoise water, shown first as scattered shards that rejoin into one photograph">
+        <div class="whole" id="whole" style="background-image:url('../samples/0.jpg')"></div>
+        <div class="pieces" id="pieces" aria-hidden="true">
+          <div class="shard s1" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s2" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s3" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s4" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s5" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s6" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s7" style="background-image:url('../samples/0.jpg')"></div>
+          <div class="shard s8" style="background-image:url('../samples/0.jpg')"></div>
+        </div>
+        <svg class="cracks" id="cracks" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="58" y1="42" x2="0" y2="0"/><line x1="58" y1="42" x2="35" y2="0"/><line x1="58" y1="42" x2="100" y2="0"/><line x1="58" y1="42" x2="100" y2="30"/>
+          <line x1="58" y1="42" x2="100" y2="100"/><line x1="58" y1="42" x2="65" y2="100"/><line x1="58" y1="42" x2="0" y2="100"/><line x1="58" y1="42" x2="0" y2="65"/>
+        </svg>
+      </div>
+      <div class="scrim" id="scrim" aria-hidden="true"></div>
+
+      <p class="hero-ask">Where did the day go?<small>Scroll to piece it together</small></p>
+      <p class="hero-end" id="heroEnd">Photos, timestamps and places, scattered across your phone. Pieced back into the order <em>they happened.</em></p>
+      <p class="hero-credit" id="heroCredit">Reference photo: Kardamos beach, Gökçeada, by Ggia, <a href="https://commons.wikimedia.org/wiki/File%3A20100524_Kardamos_beach_Imbros_G%C3%B6k%C3%A7eada_Turkey.jpg" target="_blank" rel="noreferrer">CC BY-SA 3.0</a></p>
+    </div>
+  </section>
+
+  <section class="statement" aria-label="What it does">
+    <p id="statement">A phone holds hundreds of photos with no order, no names and no story. No manual albums. No tagging. Just photos in, and a day out.</p>
+  </section>
+
+  <!-- PIPELINE: five stages as a pinned horizontal essay -->
+  <section class="stages" id="pipeline" aria-label="How the pieces get found">
+    <div class="track" id="track">
+      <div class="lead">
+        <h2>How the pieces get <em>found.</em></h2>
+        <p>Five stages. Each one shows the bar it has to clear. Scroll sideways.</p>
+      </div>
+
+      <figure class="plate tall">
+        <div class="ph">
+          <img src="../samples/33.jpg" alt="A historic building facade" loading="lazy">
+          <div class="exif" aria-hidden="true"><span>DateTimeOriginal</span><span>GPSLatitude</span><span>GPSLongitude</span></div>
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 01</span>
+          <h3>Extract</h3>
+          <span class="tag">Reads time and GPS out of the photo file itself.</span>
+          <p class="bar"><b>The bar</b>29 of 42 real photos gave a full time and place.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="plate wide">
+        <div class="ph">
+          <div class="stack2">
+            <img src="../samples/83.jpg" alt="A market street, first frame" loading="lazy">
+            <img src="../samples/84.jpg" alt="The same market street, a few steps on" loading="lazy">
+          </div>
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 02</span>
+          <h3>Cluster</h3>
+          <span class="tag">Groups photos into events by time and place. Two frames, one street, one event.</span>
+          <p class="bar"><b>The bar</b>Recovered both fabricated events from 7 photos.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="plate tall">
+        <div class="ph">
+          <img src="../samples/32.jpg" alt="Portrait of a smiling man in a flat cap" loading="lazy" style="object-position: 50% 30%">
+          <div class="face-box" aria-hidden="true"></div>
+          <div class="face-tag" aria-hidden="true">person A</div>
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 03</span>
+          <h3>Recognize</h3>
+          <span class="tag">Finds every face and groups them by person.</span>
+          <p class="bar"><b>The bar</b>94% verification on people it never saw, up from 59% before fine-tuning.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="plate wide">
+        <div class="ph">
+          <img src="../media/demo-3.jpg" alt="A steel tray of Indian food" loading="lazy">
+          <div class="said" aria-hidden="true">"plate of food"</div>
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 04</span>
+          <h3>Caption</h3>
+          <span class="tag">Describes each event in a sentence.</span>
+          <p class="bar"><b>The bar</b>Pretrained BLIP, inference only. Not trained by us, and we say so.</p>
+        </figcaption>
+      </figure>
+
+      <figure class="plate wide">
+        <div class="ph">
+          <div class="film">
+            <figure><img src="../media/demo-2.jpg" alt="Marine Drive at sunset"><figcaption>10:30 AM</figcaption></figure>
+            <figure><img src="../media/demo-1.jpg" alt="Gateway of India"><figcaption>11:15 AM</figcaption></figure>
+            <figure><img src="../media/demo-3.jpg" alt="Lunch"><figcaption>2:00 PM</figcaption></figure>
+            <figure><img src="../media/demo-4.jpg" alt="Hotel tower"><figcaption>6:30 PM</figcaption></figure>
+          </div>
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 05</span>
+          <h3>Reconstruct</h3>
+          <span class="tag">Fuses events, places and people into one timeline.</span>
+          <p class="bar"><b>The bar</b>6 ordered events from 11 real photos, end to end.</p>
+        </figcaption>
+      </figure>
+
+      <div class="lead end"><h2>One day, <em>in order.</em></h2></div>
+    </div>
+    <div class="progress" aria-hidden="true"><i></i></div>
+  </section>
+
+  <!-- PROOF -->
+  <section class="proof" aria-labelledby="proofH">
+    <h2 id="proofH">Measured on faces it <em>never saw.</em></h2>
+    <div class="proof-grid">
+      <div class="proof-item"><div class="proof-big" data-count="94" data-suffix="%">94%</div><p>Face verification accuracy, up from 59% before we fine-tuned it. 200 pairs from 29 held-out people.</p></div>
+      <div class="proof-item"><div class="proof-big" data-count="98.8" data-suffix="%" data-decimals="1">98.8%</div><p>Pairwise precision grouping 230 faces by person. Recall is 80%: it splits a person before it merges two.</p></div>
+      <div class="proof-item"><div class="proof-big" data-count="1">1</div><p>Model trained by us, out of five stages. The rest is classical logic or a pretrained model used as-is.</p></div>
+    </div>
+    <p class="proof-limit">The limits: weaker on children, and recall is lower on real phone photos.</p>
+  </section>
+
+  <!-- EXAMPLE TIMELINE -->
+  <section class="index" id="timeline" aria-labelledby="idxH">
+    <h2 id="idxH">What comes out <em>the other side.</em></h2>
+    <p class="sub">The example this project was scoped around: a day scattered across four unrelated fragments, reassembled. Hover a row to see the photo.</p>
+    <ol id="rows">
+      <li><a class="row" href="try.html" data-img="../media/demo-2.jpg"><span class="tm">10:30 AM</span><span class="t">Reached Mumbai</span><span class="pl">Marine Drive · GPS + timestamp</span></a></li>
+      <li><a class="row" href="try.html" data-img="../media/demo-1.jpg"><span class="tm">11:15 AM</span><span class="t">Visited Gateway of India</span><span class="pl">Landmark match · photo cluster</span></a></li>
+      <li><a class="row" href="try.html" data-img="../media/demo-3.jpg"><span class="tm">2:00 PM</span><span class="t">Lunch at a restaurant</span><span class="pl">Caption: "plate of food" · msg fusion</span></a></li>
+      <li><a class="row" href="try.html" data-img="../media/demo-4.jpg"><span class="tm">6:30 PM</span><span class="t">Returned to hotel</span><span class="pl">Event close · GPS return</span></a></li>
+    </ol>
+  </section>
+
+  <p class="built" aria-label="Built with"><b>Built with</b><span>EXIF</span><span>DBSCAN</span><span>FaceNet</span><span>CelebA</span><span>Agglomerative</span><span>BLIP</span><span>Flask</span></p>
+
+  <section class="cta" aria-labelledby="ctaH">
+    <h2 id="ctaH">Now try it on <em>your own photos.</em></h2>
+    <p>Upload a few real photos and watch the actual pipeline run, EXIF extraction, reverse geocoding, event clustering and captioning, live, on a dedicated page.</p>
+    <a class="go" href="try.html">Open the live tool &rarr;</a>
+  </section>
+</main>
+
+<footer class="foot" id="end">
+  <div class="foot-top">
+    <p>A day is a handful of fragments. This puts them back.</p>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="try.html">Try it</a>
+      <a href="../index.html">View the original design</a>
+      <a href="#top" id="toTop">Back to top ↑</a>
+    </nav>
+  </div>
+  <div class="credits" aria-label="Reference photo sources">
+    <span><b>Marine Drive</b> Rajarshi Mitra, CC BY 2.0</span>
+    <span><b>Gateway of India</b> Sharique Jamal, CC BY-SA 4.0</span>
+    <span><b>Restaurant thali</b> Kanikatwl, CC BY-SA 4.0</span>
+    <span><b>Four Seasons Mumbai</b> Creater903a, CC0</span>
+    <span>Other photographs: Wikimedia Commons, credits in <a href="../samples/credits.json">samples/credits.json</a></span>
+  </div>
+  <div class="big-word" aria-hidden="true"><span>M</span><span>e</span><span>m</span><span>o</span><span>r</span><span>y</span><span class="it">S</span><span class="it">h</span><span class="it">a</span><span class="it">r</span><span class="it">d</span><span class="it">s</span></div>
+</footer>
+
+<div class="peek" id="peek" aria-hidden="true"><img id="peekImg" src="../media/demo-2.jpg" alt=""></div>
+
+<script src="vendor/gsap.min.js"></script>
+<script src="vendor/ScrollTrigger.min.js"></script>
+<script src="vendor/lenis.min.js"></script>
+<script src="mare.js"></script>
+</body>
+</html>

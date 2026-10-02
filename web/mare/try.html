@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f3efe6">
+<meta name="description" content="Upload a few photos and watch the real pipeline rebuild the timeline: places, captions and who is in each.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Try MemoryShards on your own photos">
+<meta property="og:description" content="Upload a few photos and watch the real pipeline rebuild the timeline: places, captions and who is in each.">
+<meta property="og:image" content="https://memoryshards.onrender.com/media/hero-poster.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<title>Try it | MemoryShards</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b0e14'/%3E%3Cpolygon points='52,18 82,42 68,86 32,86 18,42' fill='none' stroke='%23ffb168' stroke-width='5'/%3E%3Cline x1='52' y1='18' x2='50' y2='58' stroke='%23bfe4ff' stroke-width='3'/%3E%3Cline x1='82' y1='42' x2='50' y2='58' stroke='%23bfe4ff' stroke-width='3'/%3E%3Cline x1='18' y1='42' x2='50' y2='58' stroke='%23bfe4ff' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="mare.css">
+<link rel="stylesheet" href="try-skin.css">
+</head>
+<body>
+<header class="top">
+  <a class="wordmark" href="index.html" aria-label="MemoryShards, home">Memory<em>Shards</em></a>
+  <nav class="top-nav" aria-label="Sections">
+    <a href="index.html">Overview</a>
+    <a href="index.html#pipeline">How it works</a>
+    <a href="index.html#timeline">Example</a>
+  </nav>
+  <div class="byline">AI memory reconstruction</div>
+</header>
+<main>
+
+<div class="wrap try-page">
+  <div class="page-intro">
+    <a href="index.html" class="back-link">&larr; Back to overview</a>
+  </div>
+  <section class="live-demo-section" id="try-it">
+    <h2 class="reveal">Try it on <span class="accent">your own photos.</span></h2>
+    <p class="section-sub reveal">This is real. Upload a few photos that still have their original location and timestamp data — most phone camera photos do — and the actual pipeline runs: EXIF extraction, reverse geocoding, event clustering, and captioning with a pretrained vision-language model.</p>
+
+    <div class="guide-steps reveal">
+      <div class="guide-step"><span class="guide-num mono">1</span><span>Upload a few photos</span></div>
+      <div class="guide-step"><span class="guide-num mono">2</span><span>Run the real pipeline</span></div>
+      <div class="guide-step"><span class="guide-num mono">3</span><span>Explore your timeline</span></div>
+    </div>
+
+    <div class="dropzone" id="dropzone" tabindex="0">
+      <input type="file" id="photoInput" multiple accept="image/*" hidden />
+      <div class="dropzone-hint" id="dropzoneHint">
+        <span class="dropzone-icon">↥</span>
+        <span>Drag photos here, or <span class="dropzone-browse">browse</span></span>
+      </div>
+      <div class="dropzone-previews" id="dropzonePreviews"></div>
+    </div>
+
+    <div class="live-demo-controls">
+      <button class="primary" id="btnRunDemo" disabled>Reconstruct my timeline</button>
+      <button class="ghost-btn" id="btnSample" type="button">Or try the sample photos</button>
+      <span class="demo-filecount mono" id="demoFileCount"></span>
+    </div>
+    <label class="opt-online mono">
+      <input type="checkbox" id="onlinePlaces">
+      Finer place names (neighbourhoods): sends each event's coordinates to OpenStreetMap. Off by default.
+    </label>
+
+    <div class="demo-progress" id="demoProgress" hidden>
+      <span class="demo-spinner"></span>
+      <span class="mono" id="demoProgressText">Extracting EXIF metadata…</span>
+      <ol class="stepper" id="stepper" aria-hidden="true"><li>Extract</li><li>Geocode</li><li>Cluster</li><li>Caption</li><li>Recognize</li></ol>
+    </div>
+    <div class="demo-status mono" id="demoStatus"></div>
+    <div class="demo-skip-note mono" id="demoSkipNote" hidden></div>
+
+    <div class="people-strip" id="peopleStrip" hidden></div>
+    <div class="geo-map" id="geoMap" hidden>
+      <svg id="geoSvg" viewBox="0 0 900 450" role="img" aria-label="Map of where the photos were taken"></svg>
+      <div class="geo-zoom-controls" aria-hidden="true">
+        <button type="button" class="geo-zoom-btn" id="geoZoomIn" title="Zoom in">+</button>
+        <button type="button" class="geo-zoom-btn" id="geoZoomOut" title="Zoom out">&minus;</button>
+        <button type="button" class="geo-zoom-btn geo-zoom-reset" id="geoZoomReset" title="Reset view">&#8634;</button>
+      </div>
+      <div class="geo-map-hint mono">Click a pin to zoom in &middot; drag to pan</div>
+    </div>
+    <div class="tl" id="demoResults"></div>
+    <p class="sample-credits mono" id="sampleCredits" hidden></p>
+    <p class="demo-empty mono" id="demoEmpty">No results yet — add photos above and hit Reconstruct.</p>
+  </section>
+</div>
+
+</main>
+<footer class="foot" id="end">
+  <div class="foot-top">
+    <p>A day is a handful of fragments. This puts them back.</p>
+    <nav class="foot-links" aria-label="Footer">
+      <a href="index.html">Overview</a>
+      <a href="../try.html">View the original design</a>
+      <a href="#" id="toTop">Back to top &uarr;</a>
+    </nav>
+  </div>
+  <div class="credits" aria-label="Reference photo sources">
+    <span><b>Marine Drive</b> Rajarshi Mitra, CC BY 2.0</span>
+    <span><b>Gateway of India</b> Sharique Jamal, CC BY-SA 4.0</span>
+    <span><b>Restaurant thali</b> Kanikatwl, CC BY-SA 4.0</span>
+    <span><b>Four Seasons Mumbai</b> Creater903a, CC0</span>
+    <span>Other photographs: Wikimedia Commons, credits in <a href="../samples/credits.json">samples/credits.json</a></span>
+  </div>
+</footer>
+
+<script src="common.js"></script>
+<script>document.getElementById("toTop").addEventListener("click", function (e) { e.preventDefault(); scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });</script>
+<script>
+  // Live demo: calls the real backend pipeline (Extract -> Cluster ->
+  // Caption) on whatever photos the visitor uploads here.
+  (function () {
+    // The demo runs on the same laptop as the backend, so the API defaults to
+    // localhost. ?api=<url> points the page at a different backend and is
+    // remembered (localStorage).
+    const params = new URLSearchParams(window.location.search);
+    const overrideApi = params.get('api');
+    if (overrideApi) localStorage.setItem('memoryshards_api_base', overrideApi);
+    const API_BASE = overrideApi || localStorage.getItem('memoryshards_api_base') || 'http://localhost:5000';
+
+    const dropzone = document.getElementById('dropzone');
+    const input = document.getElementById('photoInput');
+    const previewsEl = document.getElementById('dropzonePreviews');
+    const fileCountEl = document.getElementById('demoFileCount');
+    const btn = document.getElementById('btnRunDemo');
+    const status = document.getElementById('demoStatus');
+    const progress = document.getElementById('demoProgress');
+    const progressText = document.getElementById('demoProgressText');
+    const skipNote = document.getElementById('demoSkipNote');
+    const results = document.getElementById('demoResults');
+    const emptyState = document.getElementById('demoEmpty');
+    const peopleStrip = document.getElementById('peopleStrip');
+    const geoMap = document.getElementById('geoMap');
+    const geoSvg = document.getElementById('geoSvg');
+    const geoZoomIn = document.getElementById('geoZoomIn');
+    const geoZoomOut = document.getElementById('geoZoomOut');
+    const geoZoomReset = document.getElementById('geoZoomReset');
+    const sampleCredits = document.getElementById('sampleCredits');
+    const btnSample = document.getElementById('btnSample');
+    const onlinePlaces = document.getElementById('onlinePlaces');
+    onlinePlaces.checked = localStorage.getItem('memoryshards_online_places') === '1';
+    onlinePlaces.addEventListener('change', () => localStorage.setItem('memoryshards_online_places', onlinePlaces.checked ? '1' : '0'));
+
+    // Managed as our own array rather than relying on input.files directly —
+    // FileList is read-only, and we need to remove individual files after
+    // the picker/drop already populated it (e.g. clicking a preview's ×).
+    let selectedFiles = [];
+
+    function setStatus(text, isError) {
+      status.textContent = text;
+      status.classList.toggle('error', !!isError);
+    }
+
+    function renderPreviews() {
+      previewsEl.innerHTML = '';
+      for (const file of selectedFiles) {
+        const thumb = document.createElement('div');
+        thumb.className = 'preview-thumb';
+        thumb.dataset.name = file.name;
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'preview-remove';
+        removeBtn.type = 'button';
+        removeBtn.textContent = '✕';
+        removeBtn.setAttribute('aria-label', `Remove ${file.name}`);
+        removeBtn.addEventListener('click', (evt) => {
+          evt.stopPropagation();
+          selectedFiles = selectedFiles.filter(f => f !== file);
+          renderPreviews();
+        });
+        thumb.appendChild(img);
+        thumb.appendChild(removeBtn);
+        previewsEl.appendChild(thumb);
+      }
+      fileCountEl.textContent = selectedFiles.length
+        ? `${selectedFiles.length} photo${selectedFiles.length === 1 ? '' : 's'} selected`
+        : '';
+      btn.disabled = selectedFiles.length === 0;
+    }
+
+    function addFiles(fileList) {
+      const incoming = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      const existingKey = new Set(selectedFiles.map(f => f.name + f.size));
+      for (const f of incoming) {
+        if (!existingKey.has(f.name + f.size)) selectedFiles.push(f);
+      }
+      renderPreviews();
+    }
+
+    dropzone.addEventListener('click', () => input.click());
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener('change', () => addFiles(input.files));
+
+    ['dragenter', 'dragover'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); })
+    );
+    ['dragleave', 'drop'].forEach(evt =>
+      dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); })
+    );
+    dropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+    });
+
+    const PROGRESS_STAGES = [
+      'Extracting EXIF timestamp + GPS…',
+      'Reverse-geocoding locations…',
+      'Clustering photos into events…',
+      'Captioning with a vision-language model…',
+      'Recognizing faces…',
+    ];
+    let progressTimer = null;
+
+    function startProgress() {
+      let i = 0;
+      const steps = Array.from(document.querySelectorAll('#stepper li'));
+      const paint = () => steps.forEach((li, j) => {
+        li.classList.toggle('done', j < i);
+        li.classList.toggle('active', j === i);
+      });
+      progressText.textContent = PROGRESS_STAGES[0];
+      progress.hidden = false;
+      paint();
+      progressTimer = setInterval(() => {
+        i = Math.min(i + 1, PROGRESS_STAGES.length - 1);
+        progressText.textContent = PROGRESS_STAGES[i];
+        paint();
+      }, 2500);
+    }
+
+    function stopProgress() {
+      clearInterval(progressTimer);
+      progress.hidden = true;
+    }
+
+    function renderSkipNote(skipped) {
+      if (!skipped || !skipped.length) {
+        skipNote.hidden = true;
+        return;
+      }
+      skipNote.hidden = false;
+      const items = skipped.map(s => `${s.filename} <span style="opacity:0.7">(${s.reason})</span>`).join(', ');
+      skipNote.innerHTML = `<b>${skipped.length} photo${skipped.length === 1 ? '' : 's'} skipped</b> — no usable timestamp/GPS: ${items}`;
+    }
+
+    let avatarById = {};
+    let morphActive = false;
+
+    function renderPeople(people) {
+      avatarById = {};
+      peopleStrip.innerHTML = '';
+      if (!people || !people.length) { peopleStrip.hidden = true; return; }
+      peopleStrip.hidden = false;
+      const title = document.createElement('div');
+      title.className = 'people-title mono';
+      title.textContent = `${people.length} ${people.length === 1 ? 'person' : 'people'} found`;
+      peopleStrip.appendChild(title);
+      const row = document.createElement('div');
+      row.className = 'people-row';
+      for (const p of people) {
+        avatarById[p.id] = p;
+        const card = document.createElement('div');
+        card.className = 'person-card';
+        card.innerHTML =
+          '<img class="person-avatar" alt="' + p.label + '" src="' + p.avatar + '">' +
+          '<div class="person-label">' + p.label + '</div>' +
+          '<div class="person-meta mono">' + p.photo_count + (p.photo_count === 1 ? ' photo' : ' photos') + '</div>';
+        row.appendChild(card);
+      }
+      peopleStrip.appendChild(row);
+    }
+
+    function peopleChips(ids) {
+      if (!ids || !ids.length) return '';
+      return '<span class="tl-people">' + ids.map(id => {
+        const p = avatarById[id];
+        return p ? '<span class="tl-person"><img src="' + p.avatar + '" alt="">' + p.label + '</span>' : '';
+      }).join('') + '</span>';
+    }
+
+    function renderEvents(events) {
+      results.innerHTML = '';
+      emptyState.hidden = events.length > 0;
+      const dated = events.filter((e) => e.start_time);
+      const undated = events.filter((e) => !e.start_time);
+      dated.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      const ordered = dated.concat(undated);
+      const perDay = {};
+      dated.forEach((e) => {
+        const day = e.start_time.slice(0, 10);
+        perDay[day] = perDay[day] || { events: 0, photos: 0 };
+        perDay[day].events += 1;
+        perDay[day].photos += e.photo_count;
+      });
+      let lastDay = null;
+      let undatedHeaderShown = false;
+      ordered.forEach((e, i) => {
+        const day = e.start_time ? e.start_time.slice(0, 10) : null;
+        if (day !== null && day !== lastDay) {
+          lastDay = day;
+          const head = document.createElement('div');
+          head.className = 'tl-day';
+          const label = new Date(day + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+          const st = perDay[day];
+          head.innerHTML = '<b>' + label + '</b><span class="mono">' + st.events + (st.events === 1 ? ' stop' : ' stops') + ' · ' + st.photos + (st.photos === 1 ? ' photo' : ' photos') + '</span>';
+          results.appendChild(head);
+        } else if (day === null && !undatedHeaderShown) {
+          undatedHeaderShown = true;
+          const head = document.createElement('div');
+          head.className = 'tl-day';
+          head.innerHTML = '<b>Undated</b><span class="mono">' + undated.length + (undated.length === 1 ? ' photo' : ' photos') + ' · no timestamp/GPS in EXIF</span>';
+          results.appendChild(head);
+        }
+        const row = document.createElement('div');
+        row.className = 'tl-row tl-row-enter';
+        row.style.animationDelay = `${Math.min(i, 8) * 60}ms`;
+
+        const hasMore = e.photo_count > 1;
+        const countSuffix = hasMore
+          ? ` · <button type="button" class="tl-expand">${e.photo_count} photos ▾</button>`
+          : '';
+        row.innerHTML =
+          '<div class="tl-time">' + (e.start_time ? e.display_time.split(', ')[1] : '—') + '</div>' +
+          '<div class="tl-thumb" style="background-image:url(\'' + e.thumbnail + '\')' + (morphActive ? ';view-transition-name:ev-' + i : '') + '"></div>' +
+          '<div class="tl-label">' + (e.caption || '(no caption)') +
+          '<span class="place">' + e.place.toUpperCase() + countSuffix + '</span>' +
+          peopleChips(e.people) + '</div>';
+        results.appendChild(row);
+
+        if (hasMore) {
+          const gallery = document.createElement('div');
+          gallery.className = 'tl-gallery';
+          gallery.hidden = true;
+          gallery.innerHTML = e.thumbnails
+            .map(src => `<div class="tl-gallery-thumb" style="background-image:url('${src}')"></div>`)
+            .join('');
+          if (e.more_photos_not_shown > 0) {
+            const note = document.createElement('div');
+            note.className = 'tl-gallery-note';
+            note.textContent = `+${e.more_photos_not_shown} more not shown`;
+            gallery.appendChild(note);
+          }
+          results.appendChild(gallery);
+
+          const expandBtn = row.querySelector('.tl-expand');
+          expandBtn.addEventListener('click', () => {
+            gallery.hidden = !gallery.hidden;
+            expandBtn.textContent = `${e.photo_count} photos ${gallery.hidden ? '▾' : '▴'}`;
+          });
+        }
+      });
+    }
+
+    // ---- results map: coastlines (Natural Earth, public domain) + one pin per event ----
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    let landRings = null;
+
+    async function loadLand() {
+      if (landRings) return landRings;
+      const flat = await (await fetch('../media/land.json')).json();
+      landRings = flat.map((f) => {
+        const pts = [];
+        let x = f[0], y = f[1];
+        pts.push([x / 10, y / 10]);
+        for (let i = 2; i < f.length; i += 2) { x += f[i]; y += f[i + 1]; pts.push([x / 10, y / 10]); }
+        return pts;
+      });
+      return landRings;
+    }
+
+    function svgEl(name, attrs) {
+      const el = document.createElementNS(SVG_NS, name);
+      for (const k in attrs) el.setAttribute(k, attrs[k]);
+      return el;
+    }
+
+    const NICE_STEPS = [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30];
+    const NICE_KM = [0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+
+    // Frames the pins at whatever scale they need: a few km for one neighbourhood,
+    // a region for cities in a state, the world for a multi-country trip. Coastlines
+    // are only drawn once the view is wide enough for them to mean anything; close
+    // pins are pushed apart (with a leader line to the true spot) and labelled.
+    async function renderMap(events) {
+      const stops = events.map((e, i) => ({ ...e, n: i + 1 })).filter((e) => e.lat != null && e.lon != null);
+      if (!stops.length) { geoMap.hidden = true; return; }
+      let rings = null;
+      try { rings = await loadLand(); } catch (err) { rings = null; }
+
+      const W = 900, H = 450, R = 10;
+      const lons = stops.map((e) => e.lon), lats = stops.map((e) => e.lat);
+      const lonSpan = Math.max(...lons) - Math.min(...lons);
+      const latSpan = Math.max(...lats) - Math.min(...lats);
+      let cLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+      let cLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+      const wide = lonSpan > 60 || latSpan > 40;
+      const cosf = wide ? 1 : Math.cos((cLat * Math.PI) / 180);
+      let viewX = Math.max(lonSpan * cosf * 1.5, latSpan * 3, 0.03);
+      viewX = Math.min(viewX, 360);
+      if (viewX >= 120) {
+        cLon = Math.max(-180 + viewX / 2, Math.min(180 - viewX / 2, cLon));
+        cLat = Math.max(-90 + viewX / 4, Math.min(90 - viewX / 4, cLat));
+      }
+      const k = W / viewX;
+      const X = (lon) => W / 2 + (lon - cLon) * cosf * k;
+      const Y = (lat) => H / 2 + (cLat - lat) * k;
+      const lonView = viewX / cosf;
+
+      geoSvg.replaceChildren();
+      // Everything except the scale bar lives in this group -- pan/zoom just
+      // transforms the group (CSS transform, so it animates and pans for
+      // free) instead of recomputing the projection. The scale bar stays
+      // outside it: its printed distance is only accurate for the initial
+      // fit, and scaling it along with a zoom would make a stale number
+      // look freshly correct, which is worse than it just not moving.
+      const zoomLayer = svgEl('g', { class: 'geo-zoom-layer' });
+      geoSvg.appendChild(zoomLayer);
+
+      const step = NICE_STEPS.find((v) => v >= lonView / 8) || 30;
+      for (let lo = Math.ceil((cLon - lonView / 2) / step) * step; lo <= cLon + lonView / 2; lo += step) {
+        zoomLayer.appendChild(svgEl('line', { class: 'geo-grid', x1: X(lo), y1: 0, x2: X(lo), y2: H }));
+      }
+      for (let la = Math.ceil((cLat - viewX / 4) / step) * step; la <= cLat + viewX / 4; la += step) {
+        zoomLayer.appendChild(svgEl('line', { class: 'geo-grid', x1: 0, y1: Y(la), x2: W, y2: Y(la) }));
+      }
+      if (rings && lonView > 1.2) {
+        const d = rings.map((r) => 'M' + r.map(([lo, la]) => X(lo).toFixed(1) + ' ' + Y(la).toFixed(1)).join('L') + 'Z').join('');
+        zoomLayer.appendChild(svgEl('path', { class: 'geo-land', d }));
+      }
+
+      // scale bar
+      const pxPerKm = k / 111.2;
+      const km = NICE_KM.find((v) => v * pxPerKm >= 90) || 5000;
+      const barW = km * pxPerKm;
+      geoSvg.appendChild(svgEl('line', { class: 'geo-scale', x1: 24, y1: H - 22, x2: 24 + barW, y2: H - 22 }));
+      geoSvg.appendChild(svgEl('line', { class: 'geo-scale', x1: 24, y1: H - 27, x2: 24, y2: H - 17 }));
+      geoSvg.appendChild(svgEl('line', { class: 'geo-scale', x1: 24 + barW, y1: H - 27, x2: 24 + barW, y2: H - 17 }));
+      const scaleLabel = svgEl('text', { class: 'geo-scale-label', x: 24, y: H - 32 });
+      scaleLabel.textContent = km < 1 ? km * 1000 + ' m' : km + ' km';
+      geoSvg.appendChild(scaleLabel);
+
+      // pin positions, then push overlapping pins apart
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      const pts = stops.map((e) => ({ tx: clamp(X(e.lon), R + 2, W - R - 2), ty: clamp(Y(e.lat), R + 2, H - R - 2) }));
+      pts.forEach((p) => { p.x = p.tx; p.y = p.ty; });
+      for (let it = 0; it < 80; it++) {
+        let moved = false;
+        for (let i = 0; i < pts.length; i++) {
+          for (let j = i + 1; j < pts.length; j++) {
+            let dx = pts[j].x - pts[i].x, dy = pts[j].y - pts[i].y;
+            let dist = Math.hypot(dx, dy);
+            const min = R * 2.4;
+            if (dist >= min) continue;
+            if (dist < 0.01) { dx = Math.cos(j * 2.4); dy = Math.sin(j * 2.4); dist = 1; }
+            const push = (min - dist) / 2 + 0.1;
+            pts[i].x -= (dx / dist) * push; pts[i].y -= (dy / dist) * push;
+            pts[j].x += (dx / dist) * push; pts[j].y += (dy / dist) * push;
+            moved = true;
+          }
+        }
+        if (!moved) break;
+      }
+      pts.forEach((p) => { p.x = clamp(p.x, R + 2, W - R - 2); p.y = clamp(p.y, R + 2, H - R - 2); });
+
+      if (stops.length > 1) {
+        const route = pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
+        zoomLayer.appendChild(svgEl('path', { class: 'geo-route', d: route, pathLength: 100 }));
+      }
+      pts.forEach((p) => {
+        if (Math.hypot(p.x - p.tx, p.y - p.ty) > 3) {
+          zoomLayer.appendChild(svgEl('line', { class: 'geo-leader', x1: p.tx, y1: p.ty, x2: p.x, y2: p.y }));
+          zoomLayer.appendChild(svgEl('circle', { class: 'geo-true', cx: p.tx, cy: p.ty, r: 2.2 }));
+        }
+      });
+
+      // labels: first free spot around each pin (right, left, above, below)
+      const occupied = pts.map((p) => ({ x0: p.x - R - 1, y0: p.y - R - 1, x1: p.x + R + 1, y1: p.y + R + 1 }));
+      const hit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+      const labels = [];
+      if (stops.length <= 16) {
+        stops.forEach((e, i) => {
+          const text = e.place.split(',')[0].replace(/^near /, '~').slice(0, 22);
+          const w = text.length * 6.6 + 6, p = pts[i];
+          const spots = [
+            { x0: p.x + R + 5, y0: p.y - 8, anchor: 'start', tx: p.x + R + 8, w },
+            { x0: p.x - R - 5 - w, y0: p.y - 8, anchor: 'end', tx: p.x - R - 8, w },
+            { x0: p.x - w / 2, y0: p.y - R - 19, anchor: 'middle', tx: p.x, w },
+            { x0: p.x - w / 2, y0: p.y + R + 3, anchor: 'middle', tx: p.x, w },
+          ];
+          for (const sp of spots) {
+            const box = { x0: sp.x0, y0: sp.y0, x1: sp.x0 + w, y1: sp.y0 + 16 };
+            if (box.x0 < 2 || box.x1 > W - 2 || box.y0 < 2 || box.y1 > H - 2) continue;
+            if (occupied.some((o) => hit(box, o))) continue;
+            occupied.push(box);
+            labels.push({ text, x: sp.tx, y: box.y0 + 12, anchor: sp.anchor });
+            break;
+          }
+        });
+      }
+      labels.forEach((l) => {
+        const t = svgEl('text', { class: 'geo-label', x: l.x, y: l.y, 'text-anchor': l.anchor });
+        t.textContent = l.text;
+        zoomLayer.appendChild(t);
+      });
+
+      stops.forEach((e, i) => {
+        const g = svgEl('g', { class: 'geo-pin', 'data-n': e.n, style: '--i:' + i, transform: 'translate(' + pts[i].x.toFixed(1) + ' ' + pts[i].y.toFixed(1) + ')' });
+        const title = svgEl('title', {});
+        title.textContent = e.n + '. ' + e.place;
+        g.appendChild(title);
+        g.appendChild(svgEl('circle', { class: 'geo-pulse', r: 9 }));
+        g.appendChild(svgEl('circle', { class: 'geo-dot', r: 8 }));
+        const num = svgEl('text', { class: 'geo-num', y: 3.6, 'text-anchor': 'middle' });
+        num.textContent = e.n;
+        g.appendChild(num);
+        g.style.cursor = 'zoom-in';
+        g.addEventListener('click', () => zoomToPoint(pts[i].x, pts[i].y));
+        zoomLayer.appendChild(g);
+      });
+      geoMap.hidden = false;
+      initGeoZoomPan(zoomLayer);
+
+      // hovering a timeline row lights its pin; clicking one zooms to it
+      results.querySelectorAll('.tl-row').forEach((row, i) => {
+        const pin = () => geoSvg.querySelector('.geo-pin[data-n="' + (i + 1) + '"]');
+        row.addEventListener('mouseenter', () => pin()?.classList.add('is-active'));
+        row.addEventListener('mouseleave', () => pin()?.classList.remove('is-active'));
+        if (pts[i]) {
+          row.style.cursor = 'zoom-in';
+          row.addEventListener('click', () => zoomToPoint(pts[i].x, pts[i].y));
+        }
+      });
+    }
+
+    // Pan/zoom for the results map: a CSS transform on one <g> (translate
+    // then scale, in that order so scaling happens around the SVG origin
+    // and the translate re-centers whatever point was clicked) -- lets the
+    // browser animate and interpolate it for free, no viewBox math needed
+    // per frame. Re-created on every renderMap() call since the old
+    // zoomLayer element is gone once the map is redrawn.
+    let geoZoom = { scale: 1, tx: 0, ty: 0 };
+    let geoZoomLayerEl = null;
+    const GEO_MAP_W = 900, GEO_MAP_H = 450, GEO_ZOOM_MAX = 6, GEO_ZOOM_MIN = 1;
+
+    function applyGeoZoom() {
+      if (!geoZoomLayerEl) return;
+      geoZoomLayerEl.style.transform = `translate(${geoZoom.tx}px, ${geoZoom.ty}px) scale(${geoZoom.scale})`;
+      geoMap.classList.toggle('is-zoomed', geoZoom.scale > 1.001);
+    }
+
+    function zoomToPoint(x, y, scale) {
+      const s = Math.min(GEO_ZOOM_MAX, Math.max(GEO_ZOOM_MIN, scale || 3));
+      geoZoom = { scale: s, tx: GEO_MAP_W / 2 - x * s, ty: GEO_MAP_H / 2 - y * s };
+      applyGeoZoom();
+    }
+
+    function resetGeoZoom() {
+      geoZoom = { scale: 1, tx: 0, ty: 0 };
+      applyGeoZoom();
+    }
+
+    function initGeoZoomPan(layer) {
+      geoZoomLayerEl = layer;
+      resetGeoZoom();
+
+      let dragging = false, startX = 0, startY = 0, startTx = 0, startTy = 0, moved = false;
+      const toSvgScale = () => GEO_MAP_W / geoSvg.getBoundingClientRect().width;
+
+      geoSvg.addEventListener('pointerdown', (ev) => {
+        if (geoZoom.scale <= 1.001) return; // nothing to pan at the fitted view
+        dragging = true; moved = false;
+        startX = ev.clientX; startY = ev.clientY;
+        startTx = geoZoom.tx; startTy = geoZoom.ty;
+        geoSvg.setPointerCapture(ev.pointerId);
+      });
+      geoSvg.addEventListener('pointermove', (ev) => {
+        if (!dragging) return;
+        const k = toSvgScale();
+        const dx = (ev.clientX - startX) * k, dy = (ev.clientY - startY) * k;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+        geoZoom.tx = startTx + dx; geoZoom.ty = startTy + dy;
+        applyGeoZoom();
+      });
+      const endDrag = () => { dragging = false; };
+      geoSvg.addEventListener('pointerup', endDrag);
+      geoSvg.addEventListener('pointerleave', endDrag);
+      // Suppress the pin/row click that a drag would otherwise also fire.
+      geoSvg.addEventListener('click', (ev) => { if (moved) { ev.stopPropagation(); moved = false; } }, true);
+
+      geoZoomIn.onclick = () => zoomToPoint(GEO_MAP_W / 2 - geoZoom.tx / geoZoom.scale, GEO_MAP_H / 2 - geoZoom.ty / geoZoom.scale, geoZoom.scale + 1);
+      geoZoomOut.onclick = () => {
+        if (geoZoom.scale <= GEO_ZOOM_MIN + 0.001) return;
+        zoomToPoint(GEO_MAP_W / 2 - geoZoom.tx / geoZoom.scale, GEO_MAP_H / 2 - geoZoom.ty / geoZoom.scale, geoZoom.scale - 1);
+      };
+      geoZoomReset.onclick = resetGeoZoom;
+    }
+
+    // ---- sample photos (Wikimedia Commons, CC-licensed) and their credits ----
+    let creditsByFile = null;
+
+    async function loadCredits() {
+      if (!creditsByFile) {
+        const list = await (await fetch('../samples/credits.json')).json();
+        creditsByFile = Object.fromEntries(list.map((c) => [c.file, c]));
+      }
+      return creditsByFile;
+    }
+
+    async function renderCredits() {
+      sampleCredits.hidden = true;
+      if (!selectedFiles.length) return;
+      let credits;
+      try { credits = await loadCredits(); } catch (err) { return; }
+      if (!selectedFiles.every((f) => credits[f.name])) return;
+      const seen = new Map();
+      selectedFiles.forEach((f) => { const c = credits[f.name]; seen.set(c.author + '|' + c.license, c); });
+      sampleCredits.replaceChildren(document.createTextNode('Sample photos via Wikimedia Commons, resized: '));
+      let first = true;
+      for (const c of seen.values()) {
+        if (!first) sampleCredits.appendChild(document.createTextNode(' · '));
+        first = false;
+        sampleCredits.appendChild(document.createTextNode(c.author + ' '));
+        const a = document.createElement('a');
+        a.href = c.license_url || c.page;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = c.license;
+        sampleCredits.appendChild(a);
+      }
+      sampleCredits.hidden = false;
+    }
+
+    btnSample.addEventListener('click', async () => {
+      btnSample.disabled = true;
+      try {
+        const credits = await loadCredits();
+        const files = await Promise.all(Object.keys(credits).map(async (name) => {
+          const blob = await (await fetch('../samples/' + name)).blob();
+          return new File([blob], name, { type: 'image/jpeg' });
+        }));
+        selectedFiles = [];
+        addFiles(files);
+        btn.click();
+      } catch (err) {
+        setStatus('Could not load the sample photos.', true);
+      } finally {
+        btnSample.disabled = false;
+      }
+    });
+
+    btn.addEventListener('click', async () => {
+      if (!selectedFiles.length) {
+        setStatus('Add a few photos first.', true);
+        return;
+      }
+
+      const formData = new FormData();
+      for (const file of selectedFiles) formData.append('photos', file);
+      if (onlinePlaces.checked) formData.append('online_places', '1');
+
+      results.innerHTML = '';
+      peopleStrip.hidden = true;
+      geoMap.hidden = true;
+      sampleCredits.hidden = true;
+      skipNote.hidden = true;
+      setStatus('');
+      startProgress();
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API_BASE + '/api/timeline', { method: 'POST', body: formData });
+
+        // A non-2xx response (e.g. a 500 error page) isn't JSON — parsing
+        // it as JSON throws, and that exception used to land in the catch
+        // block below and get mislabeled as "can't reach the server" even
+        // though the server was reached fine and just errored. Surface the
+        // real status instead of masking it.
+        if (!res.ok) {
+          const bodyText = await res.text();
+          setStatus(`Server error (HTTP ${res.status}): ${bodyText.slice(0, 200)}`, true);
+          return;
+        }
+
+        const data = await res.json();
+
+        if (data.error) {
+          setStatus(data.error, true);
+        } else if (!data.events || !data.events.length) {
+          setStatus(data.message || 'No usable photos — none had both a timestamp and GPS location.', true);
+          renderSkipNote(data.skipped);
+        } else {
+          setStatus('');
+          const apply = () => {
+            document.querySelectorAll('.preview-thumb').forEach(t => { t.style.viewTransitionName = ''; });
+            renderPeople(data.people);
+            renderEvents(data.events);
+            const nPhotos = data.events.reduce((n, e) => n + ((e.filenames || []).length || 1), 0);
+            const nPeople = (data.people || []).length;
+            const sum = document.createElement('div');
+            sum.className = 'run-summary';
+            sum.innerHTML = `<span><b data-count="${nPhotos}">0</b>photos</span><span><b data-count="${data.events.length}">0</b>events</span><span><b data-count="${nPeople}">0</b>${nPeople === 1 ? 'person' : 'people'}</span>`;
+            results.prepend(sum);
+            // Count up on reveal, same easing as the landing page's proof
+            // stats -- the results moment gets a small payoff instead of
+            // the numbers just appearing static.
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            sum.querySelectorAll('b[data-count]').forEach((el) => {
+              const target = parseInt(el.dataset.count, 10);
+              if (reduceMotion || !target) { el.textContent = target; return; }
+              const duration = 700, start = performance.now();
+              const step = (now) => {
+                const t = Math.min(1, (now - start) / duration);
+                el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+                if (t < 1) requestAnimationFrame(step);
+              };
+              requestAnimationFrame(step);
+            });
+            renderSkipNote(data.skipped);
+          };
+          const showExtras = () => { renderMap(data.events); renderCredits(); results.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+          const canMorph = document.startViewTransition &&
+            !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (canMorph) {
+            // Each event's first uploaded photo flies from the dropzone into its timeline row.
+            const thumbs = Array.from(document.querySelectorAll('.preview-thumb'));
+            data.events.forEach((e, i) => {
+              const first = e.filenames && e.filenames[0];
+              const el = first && thumbs.find(t => t.dataset.name === first);
+              if (el) el.style.viewTransitionName = 'ev-' + i;
+            });
+            results.classList.add('morphing');
+            morphActive = true;
+            const vt = document.startViewTransition(apply);
+            vt.ready.catch(() => {}); // skipped when the tab is hidden; the DOM update still runs
+            vt.finished.finally(() => {
+              morphActive = false;
+              results.classList.remove('morphing');
+              document.querySelectorAll('.tl-thumb').forEach(t => { t.style.viewTransitionName = ''; });
+              showExtras();
+            });
+          } else {
+            apply();
+            showExtras();
+          }
+        }
+      } catch (err) {
+        // This catch only fires now for genuine network-level failures —
+        // fetch() throwing before any response came back at all.
+        setStatus(`Could not reach the server (${err.message}). If this is the first ` +
+          'request in a while, the backend may be waking up — try again in about 30 seconds.', true);
+      } finally {
+        stopProgress();
+        btn.disabled = selectedFiles.length === 0;
+      }
+    });
+  })();
+</script>
+</body>
+</html>

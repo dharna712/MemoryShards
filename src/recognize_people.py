@@ -29,7 +29,11 @@ from facenet_pytorch import MTCNN, InceptionResnetV1
 from PIL import Image
 from sklearn.cluster import AgglomerativeClustering
 
-CHECKPOINT = Path(__file__).resolve().parent.parent / "checkpoints" / "face_embedding_head.pt"
+_CKPT_DIR = Path(__file__).resolve().parent.parent / "checkpoints"
+# v2 (age/kids/degraded-photo fine-tune) preferred; v1 is the fallback
+CHECKPOINT = _CKPT_DIR / "face_embedding_v2.pt"
+if not CHECKPOINT.exists():
+    CHECKPOINT = _CKPT_DIR / "face_embedding_head.pt"
 DISTANCE_THRESHOLD = 0.5
 MIN_DETECTION_PROB = 0.97
 MIN_FACE_PX = 48

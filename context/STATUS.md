@@ -616,3 +616,23 @@ Third visual attempt, this time as an editorial "photo album being developed" (w
 - Try page: same markup and the same inline script and API calls as the original (copied by `tools/build_mare_try.py`, paths fixed); only the look changed through `try-skin.css` (variables, serif headings, flat square components). Verified end to end with the 11 sample photos against the real API (15 timeline rows, 2 people, map).
 - Self-hosted fonts and GSAP/ScrollTrigger/Lenis (no CDN). Laptop-only; the short-laptop (720px) case checked. Not pushed.
 - Known: detector findings left standing on purpose are the chosen look (cream paper, Instrument Serif/Geist, italic accent words), light text over the full-bleed photo, and display type with tight leading. Hero photo is a CC BY-SA sample (credited on the page).
+
+## Face model v2: trained on kids, older faces and degraded photos
+
+Goal: raise the embedding model's floor on what real family/phone photos look like (children, a person decades apart, blurry/dark/compressed shots). New training mix in `src/train_face_v2.py`: CelebA (as v1) + AgeDB identities (ages ~1-101, cross-age positives preferred) + UTKFace children and 70+ faces as self-supervised identities (positive = another view of the same photo), with random blur / motion blur / low-res / heavy JPEG / noise / low-light applied to positive pairs. Data helpers in `src/face_data.py`, kid/old download in `src/download_utkface_kids.py`. AgeDB and UTKFace are research datasets (third-party mirrors on the Hugging Face Hub, licence unknown/research-only): training use only, nothing redistributed, `data/` stays gitignored.
+
+Held-out benchmark (`src/evaluate_robustness.py`, fixed seeded pairs, identities and images never trained on; best-threshold verification accuracy, kids/old are top-1 retrieval of a degraded view among clean faces):
+
+| | CelebA clean | AgeDB clean | 20+ yrs apart | AgeDB degraded | CelebA degraded | Kids | Old |
+|---|---|---|---|---|---|---|---|
+| pretrained | 59.0 | 56.5 | 51.0 | 55.0 | 56.0 | 44.0 | 38.0 |
+| v1 | 92.0 | 90.0 | 91.0 | 90.0 | 88.5 | 83.0 | 98.0 |
+| v2 | 92.5 | 92.0 | 90.5 | 93.5 | 90.5 | 86.0 | 96.0 |
+
+Gains are modest (kids +3, degraded +2 to +3.5, AgeDB clean +2) and sets are small (400 pairs, 200 kids), so 1-2 point differences are within noise; old-face retrieval and the 20-year gap are flat to slightly lower. v1 was already strong on blur and age. Clustering benchmark (`src/evaluate_clustering.py`, average linkage at 0.5): precision 0.987 (v1 0.988), recall 0.824 (v1 0.804), ARI 0.895 (v1 0.883); threshold stays 0.5.
+
+Two findings worth keeping:
+- First v2 attempt scored ~60% (near the untrained baseline). Cause: it kept the frozen trunk in eval mode. The v1 notebook calls `model.train()` on the whole net, so the frozen layers' BatchNorm statistics adapt to the new faces, and that adaptation is most of the gain. Retraining with `--trunk-bn-train` (the v1 behaviour) reproduced 92% on clean CelebA, then the full mix gave the table above. Unfreezing block8 with eval-mode BN did not help either.
+- Self-supervised kid/old pairs only teach "different photos of different children are different people", not true identity, so the kids number is a retrieval proxy, not identity accuracy.
+
+`recognize_people.py` now loads `checkpoints/face_embedding_v2.pt` and falls back to the v1 file. Checkpoints are gitignored; a running backend needs a restart to pick it up.

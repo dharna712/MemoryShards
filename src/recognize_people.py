@@ -34,6 +34,8 @@ _CKPT_DIR = Path(__file__).resolve().parent.parent / "checkpoints"
 CHECKPOINT = _CKPT_DIR / "face_embedding_v2.pt"
 if not CHECKPOINT.exists():
     CHECKPOINT = _CKPT_DIR / "face_embedding_head.pt"
+if os.environ.get("MS_FACE_CHECKPOINT"):  # A/B testing override
+    CHECKPOINT = Path(os.environ["MS_FACE_CHECKPOINT"])
 DISTANCE_THRESHOLD = 0.5
 MIN_DETECTION_PROB = 0.97
 MIN_FACE_PX = 48

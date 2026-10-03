@@ -121,4 +121,4 @@ if __name__ == "__main__":
     # torch/stdlib files mid-request on this machine and restarting the
     # server, killing in-flight requests — not needed for local testing,
     # and production (gunicorn) doesn't use this reloader at all
-    app.run(debug=False, port=5000)
+    app.run(debug=False, port=int(__import__('os').environ.get('PORT', 5000)))

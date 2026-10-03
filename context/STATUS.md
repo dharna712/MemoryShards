@@ -636,3 +636,29 @@ Two findings worth keeping:
 - Self-supervised kid/old pairs only teach "different photos of different children are different people", not true identity, so the kids number is a retrieval proxy, not identity accuracy.
 
 `recognize_people.py` now loads `checkpoints/face_embedding_v2.pt` and falls back to the v1 file. Checkpoints are gitignored; a running backend needs a restart to pick it up.
+
+## Face model v2: end-to-end testing, threshold sweep, and what is still weak
+
+**API end-to-end suite** (`src/test_pipeline_e2e.py`, 10 checks, held-out fixtures only, no personal photos). POSTs real files to `/api/timeline` the way the page does. Run against v2 locally and again through the public tunnel (incl. the CORS preflight from the Render origin): 10/10 both times. Checks: health; no files -> 400; corrupt and non-image uploads -> 200 with no events and no crash; a 10x10 image; EXIF+GPS photos -> dated, placed events; 5 people x 6 clean photos -> 5 people, precision 1.0 recall 1.0; 4 people x 4 ages (25-70y span) -> precision 1.0 (recall 0.58); the same with half the photos blurred/low-res/JPEG-crushed -> precision 1.0 (recall 0.33); mixed dated + undated -> exactly the undated ones flagged, nothing dropped; 8 different children (clean + degraded copy each). Fixture bug found along the way: re-encoding with PIL strips EXIF, so the EXIF checks must send the original bytes. The checkpoint fallback chain (v2 -> v1 -> recognition skipped) was tested by moving the files.
+
+**v1 vs v2 on the same API suite:** v1 9/10. Its one failure is children: it merged all 8 different kids into one person (precision 0.07). v2 gets 6 groups (precision 0.40). v2 does split a person across decades more often at the fixed 0.5 threshold (4-age fixture recall 0.58 vs v1 0.83), always on the safe side (precision stays 1.0).
+
+**Threshold sweep on larger sets** (`src/evaluate_group_sweep.py`, average linkage, pairwise P/R/ARI): 60 held-out AgeDB people x 5 ages, and 200 held-out UTKFace children (clean + degraded view each). At the shipped threshold 0.5, v2 vs v1:
+
+| | v1 precision / recall / ARI | v2 precision / recall / ARI |
+|---|---|---|
+| cross-age | 0.824 / 0.477 / 0.600 | 0.940 / 0.495 / 0.645 |
+| cross-age, half degraded | 0.729 / 0.377 / 0.492 | 0.892 / 0.370 / 0.519 |
+| 200 children | 0.003 / 0.865 / 0.001 | 0.148 / 0.880 / 0.250 |
+
+v2 is better on every set at the same threshold, so the 0.5 default stays (precision first; adult CelebA benchmark still peaks there, 0.987 / 0.824 / 0.895). v2's cross-age ARI peaks higher at 0.55-0.6 (0.71-0.72) but precision falls and children merge more, so it was not raised.
+
+**What is still weak (honest limits):**
+- Children: far better than v1 but still merge badly (precision 0.15 across 200 kids at 0.5; 0.32 even at 0.40). The kid training data has no identity labels, only "two views of one photo" self-supervision, so the model learns to match a degraded view to its clean twin but not true identity. Real fix needs identity-labelled child data.
+- Cross-age recall is about 0.5 for both models: the same person decades apart is usually split into two people. Fails safe, but undercounts.
+- Degraded cross-age recall is lowest (0.37).
+- The earlier retrieval benchmark (kids 83 -> 86%) and these clustering numbers measure different things; the clustering numbers are the ones that match what the user sees.
+
+`src/recognize_people.py` also gained an `MS_FACE_CHECKPOINT` override (A/B testing) and `src/api.py` a `PORT` env var, both default to the old behaviour. Backend and tunnel restarted on v2 after the push.
+
+Next candidates: more child weight / bigger batch for hard negatives; an identity-labelled child dataset if one can be sourced; a cross-age-aware merge pass (attach singletons to a big cluster at a looser threshold only when the face is clearly the same age band).

@@ -38,13 +38,13 @@ from torch import optim
 from torch.utils.data import DataLoader, Dataset
 
 from face_data import (RAW, REPO_ROOT, cached_crop, degrade, light_aug,
-                       scan_agedb, split_agedb)
+                       scan_agedb, scan_ylfw, split_agedb, split_ylfw)
 
 KID_HOLDOUT = 200
 OLD_HOLDOUT = 100
 AGEDB_PER_ID = 24
 DEGRADE_P = 0.5
-MIX = {"agedb": 0.45, "celeba": 0.25, "kid": 0.22, "old": 0.08}
+MIX = {"agedb": 0.35, "celeba": 0.2, "ylfw": 0.25, "kid": 0.15, "old": 0.05}
 
 
 def load_sources(mtcnn):
@@ -70,18 +70,25 @@ def load_sources(mtcnn):
         return [cached_crop(mtcnn, p) for p in files]
 
     kids, old = utk("kid", KID_HOLDOUT), utk("old", OLD_HOLDOUT)
+    ylfw = {}
+    if (RAW / "ylfw").exists():
+        tr, _ = split_ylfw(scan_ylfw())
+        for ident, files in tr.items():
+            ylfw[ident] = [cached_crop(mtcnn, p) for p in files]
     print(f"[data] celeba ids={len(celeba)} agedb ids={len(agedb)} kids={len(kids)} old={len(old)} "
           f"({time.time() - t0:.0f}s)")
-    return celeba, agedb, kids, old
+    print(f"[data] ylfw child identities={len(ylfw)}")
+    return celeba, agedb, kids, old, ylfw
 
 
 class MixedPairs(Dataset):
-    def __init__(self, celeba, agedb, kids, old, length):
-        self.celeba, self.agedb, self.kids, self.old = celeba, agedb, kids, old
+    def __init__(self, celeba, agedb, kids, old, ylfw, length):
+        self.celeba, self.agedb, self.kids, self.old, self.ylfw = celeba, agedb, kids, old, ylfw
+        self.ylfw_ids = list(ylfw)
         self.celeba_ids, self.agedb_ids = list(celeba), list(agedb)
         self.length = length
         self.label_of = {}
-        for i in self.celeba_ids + self.agedb_ids:
+        for i in self.celeba_ids + self.agedb_ids + [f'y{k}' for k in self.ylfw_ids]:
             self.label_of[i] = len(self.label_of)
 
     def __len__(self):
@@ -112,6 +119,11 @@ class MixedPairs(Dataset):
                 (a, _), (b, _) = random.sample(items, 2)
             va, vb = self._views(a, b)
             return va, vb, self.label_of[ident]
+        if kind == "ylfw":
+            ident = random.choice(self.ylfw_ids)
+            a, b = random.sample(self.ylfw[ident], 2)
+            va, vb = self._views(a, b)
+            return va, vb, self.label_of[f"y{ident}"]
         if kind == "celeba":
             ident = random.choice(self.celeba_ids)
             a, b = random.sample(self.celeba[ident], 2)
@@ -157,7 +169,7 @@ def main():
     torch.manual_seed(3)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mtcnn = MTCNN(image_size=160, margin=14, device=device, post_process=False)
-    celeba, agedb, kids, old = load_sources(mtcnn)
+    celeba, agedb, kids, old, ylfw = load_sources(mtcnn)
     del mtcnn
 
     model = InceptionResnetV1(pretrained="vggface2", classify=False).to(device)
@@ -174,7 +186,7 @@ def main():
           f"(block8 {'on' if args.unfreeze_block8 else 'off'})")
     opt = optim.Adam(params, lr=args.lr)
 
-    ds = MixedPairs(celeba, agedb, kids, old, length=args.steps_per_epoch * args.batch)
+    ds = MixedPairs(celeba, agedb, kids, old, ylfw, length=args.steps_per_epoch * args.batch)
     loader = DataLoader(ds, batch_size=args.batch, shuffle=False, num_workers=0)
 
     out = REPO_ROOT / args.out

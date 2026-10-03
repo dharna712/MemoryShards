@@ -123,3 +123,24 @@ def light_aug(crop_u8, rng=random):
         t = torch.flip(t, dims=[2])
     t = (t * rng.uniform(0.85, 1.15) + rng.uniform(-12, 12)).clamp(0, 255)
     return t
+
+
+YLFW_HOLDOUT = 80
+
+
+def scan_ylfw():
+    """-> {identity: [path, ...]} for data/raw/ylfw (child identities)."""
+    root = RAW / "ylfw"
+    out = {}
+    for d in sorted(root.glob("*")):
+        files = sorted(str(p) for p in list(d.glob("*.png")) + list(d.glob("*.jpg")))
+        if len(files) >= 3:
+            out[d.name] = files
+    return out
+
+
+def split_ylfw(ylfw):
+    ids = sorted(ylfw)
+    random.Random(SEED).shuffle(ids)
+    held = set(ids[:YLFW_HOLDOUT])
+    return ({i: ylfw[i] for i in ids if i not in held}, {i: ylfw[i] for i in ids if i in held})

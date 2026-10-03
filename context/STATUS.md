@@ -662,3 +662,28 @@ v2 is better on every set at the same threshold, so the 0.5 default stays (preci
 `src/recognize_people.py` also gained an `MS_FACE_CHECKPOINT` override (A/B testing) and `src/api.py` a `PORT` env var, both default to the old behaviour. Backend and tunnel restarted on v2 after the push.
 
 Next candidates: more child weight / bigger batch for hard negatives; an identity-labelled child dataset if one can be sourced; a cross-age-aware merge pass (attach singletons to a big cluster at a looser threshold only when the face is clearly the same age band).
+
+## Face model v3: identity-labelled children (YLFW) + a better grouping threshold
+
+**Data:** YLFW (Young Labeled Faces in the Wild: identity-labelled children, built from internet images of young celebrities/actors), aligned crops from the Hugging Face mirror `hieupth/ylfw`: 7,750 images across 1,795 child identities with >= 3 photos; 80 identities held out for evaluation, 1,715 trained on (25% of the training mix; the UTKFace self-supervised kids drop to 15%). Research dataset, training/eval use only, `data/` gitignored, nothing redistributed. Loader: `src/download_ylfw.py`.
+
+**Why the download was slow:** the repo is 29,436 separate tiny files (three copies of ~9.8k), and the standard `load_dataset` fetches them one at a time at about 0.5s of pure request latency each, which is hours. The Hub's parquet export only holds file references, not images. `download_ylfw.py` pulls just the aligned folder (9,810 files) over 24 parallel connections with backoff (64 got rate-limited) and resumes; a few minutes instead of hours.
+
+**v3** = same recipe as v2 (`--trunk-bn-train --degrade-p 0.4`, 16 epochs) with YLFW added. Loss plateaus around 0.088 from epoch ~5 as before.
+
+Group-threshold sweep (`src/evaluate_group_sweep.py`, now also scoring held-out CelebA adults and held-out YLFW children, clean and degraded). Mean over the five identity-labelled sets (cross-age, cross-age degraded, CelebA adults, YLFW children, YLFW degraded):
+
+| thr | v2 P / R / ARI | v3 P / R / ARI |
+|---|---|---|
+| 0.40 | 0.919 / 0.466 / 0.585 | 0.934 / 0.507 / 0.629 |
+| **0.45** | 0.860 / 0.544 / 0.634 | **0.881 / 0.602 / 0.689** |
+| 0.50 | 0.777 / 0.629 / 0.656 | 0.814 / 0.662 / 0.700 |
+| 0.55 | 0.706 / 0.696 / 0.654 | 0.701 / 0.722 / 0.674 |
+
+On real held-out child identities at 0.45: v1 precision about 0.1 (it merges almost every child together), v2 0.74, v3 0.77, ARI 0.79. Verification benchmark (`evaluate_robustness.py`): v3 CelebA 93.0 / AgeDB clean 92.5 / 20y gap 92.5 / AgeDB degraded 91.5 / CelebA degraded 90.5 / kids 85.5 / old 95.0 (v2: 92.5 / 92.0 / 90.5 / 93.0 / 90.5 / 85.0 / 97.0). Small sets, so 1-2 points are noise.
+
+**Threshold change 0.5 -> 0.45** in `recognize_people.py`. 0.5 was tuned on adult CelebA alone; across adults, cross-age and children it merges different people too readily. 0.45 raises mean precision 0.81 -> 0.88 at the cost of recall: mean recall 0.66 -> 0.60, mean ARI 0.700 -> 0.689 (0.5 is marginally higher on ARI but precision matters more: merging two people is worse than splitting one). Adult CelebA recall drops 0.81 -> 0.71 at 0.45, precision unchanged at 0.99.
+
+**Live:** `recognize_people.py` now loads the newest checkpoint present (v3 > v2 > v1) at threshold 0.45. API end-to-end suite 10/10 through the public tunnel; the 8-different-children check improved from 6 groups (precision 0.40, v2) to 7 groups (0.67, v3); v1 merged all 8 into one.
+
+**Still weak:** children are much better but not solved (YLFW precision 0.77 at 0.45 means roughly one in four same-group pairs is wrong); the same person decades apart is still usually split (cross-age recall ~0.4 at 0.45); degraded cross-age is lowest. Next candidates: larger/harder negative mining batches for children, a cross-age-aware merge pass, or a second identity-labelled child set.

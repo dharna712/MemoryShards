@@ -3,7 +3,7 @@ Recognize stage: detect every face in the photos, embed each one with the
 fine-tuned FaceNet checkpoint, and group faces into people.
 
 Grouping uses average-linkage agglomerative clustering on cosine distance
-(threshold 0.5). Chosen from src/evaluate_clustering.py on 230 faces of 29
+(threshold 0.45, see below). Chosen from src/evaluate_clustering.py on 230 faces of 29
 identities the model never saw in training: 98.8% pairwise precision,
 80.4% recall, ARI 0.883. DBSCAN chains different people together once the
 threshold passes ~0.35 (precision falls to 0.28 at 0.45), so it was dropped.
@@ -30,13 +30,16 @@ from PIL import Image
 from sklearn.cluster import AgglomerativeClustering
 
 _CKPT_DIR = Path(__file__).resolve().parent.parent / "checkpoints"
-# v2 (age/kids/degraded-photo fine-tune) preferred; v1 is the fallback
-CHECKPOINT = _CKPT_DIR / "face_embedding_v2.pt"
-if not CHECKPOINT.exists():
-    CHECKPOINT = _CKPT_DIR / "face_embedding_head.pt"
+# newest fine-tune that exists: v3 (adds identity-labelled children) > v2 > v1
+CHECKPOINT = next((c for c in (_CKPT_DIR / "face_embedding_v3.pt", _CKPT_DIR / "face_embedding_v2.pt",
+                               _CKPT_DIR / "face_embedding_head.pt") if c.exists()),
+                  _CKPT_DIR / "face_embedding_head.pt")
 if os.environ.get("MS_FACE_CHECKPOINT"):  # A/B testing override
     CHECKPOINT = Path(os.environ["MS_FACE_CHECKPOINT"])
-DISTANCE_THRESHOLD = 0.5
+# 0.45, not the 0.5 tuned on adult CelebA alone: the sweep over adults, cross-age and
+# child sets (src/evaluate_group_sweep.py) raises mean precision 0.80 -> 0.89 at
+# the cost of some adult recall. Merging two people is worse than splitting one.
+DISTANCE_THRESHOLD = 0.45
 MIN_DETECTION_PROB = 0.97
 MIN_FACE_PX = 48
 AVATAR_PX = 96

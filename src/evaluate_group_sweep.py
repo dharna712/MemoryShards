@@ -27,9 +27,12 @@ from facenet_pytorch import MTCNN, InceptionResnetV1
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import adjusted_rand_score
 
-from face_data import RAW, REPO_ROOT, cached_crop, degrade, plain, scan_agedb, split_agedb
+import csv
 
-THRESHOLDS = [0.4, 0.45, 0.5, 0.55, 0.6, 0.65]
+from face_data import (RAW, REPO_ROOT, cached_crop, degrade, plain, scan_agedb, scan_ylfw, split_agedb,
+                       split_ylfw)
+
+THRESHOLDS = [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65]
 
 
 def pairwise_pr(truth, pred):
@@ -58,7 +61,24 @@ def build(mtcnn):
             deg_flags.append(k % 2 == 1)
     kid_files = sorted((RAW / "utkface" / "kid").glob("*.jpg"), key=lambda p: int(p.stem.split("_")[0]))[-200:]
     kids = [cached_crop(mtcnn, p) for p in kid_files]
-    return crops, labels, deg_flags, kids
+    ce_c, ce_l = [], []
+    by = {}
+    with open(RAW / "celeba_holdout" / "manifest.csv") as f:
+        for row in csv.DictReader(f):
+            by.setdefault(row["celeb_id"], []).append(RAW / "celeba_holdout" / row["path"])
+    for n, (ident, ps) in enumerate(sorted(by.items())):
+        for p in ps[:8]:
+            ce_c.append(cached_crop(mtcnn, p))
+            ce_l.append(n)
+    yl_c, yl_l, yl_d = [], [], []
+    if (RAW / "ylfw").exists():
+        _, held_y = split_ylfw(scan_ylfw())
+        for n, (ident, files) in enumerate(sorted(held_y.items())):
+            for k, p in enumerate(files[:6]):
+                yl_c.append(cached_crop(mtcnn, p))
+                yl_l.append(n)
+                yl_d.append(k % 2 == 1)
+    return crops, labels, deg_flags, kids, (ce_c, ce_l), (yl_c, yl_l, yl_d)
 
 
 @torch.no_grad()
@@ -67,20 +87,24 @@ def embed(model, tensors, device):
     return torch.cat(out).numpy()
 
 
+SUMMARY = {}
+
+
 def sweep(name, emb, truth):
     print(f"  {name}")
     for t in THRESHOLDS:
         lab = AgglomerativeClustering(n_clusters=None, distance_threshold=t, metric="cosine",
                                       linkage="average").fit(emb).labels_
         p, r = pairwise_pr(truth, lab)
-        print(f"    thr {t:.2f}  clusters {len(set(lab)):4d}  precision {p:.3f}  recall {r:.3f}  "
-              f"ARI {adjusted_rand_score(truth, lab):.3f}")
+        ari = adjusted_rand_score(truth, lab)
+        SUMMARY.setdefault(t, []).append((p, r, ari))
+        print(f"    thr {t:.2f}  clusters {len(set(lab)):4d}  precision {p:.3f}  recall {r:.3f}  ARI {ari:.3f}")
 
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     mtcnn = MTCNN(image_size=160, margin=14, device=device, post_process=False)
-    crops, labels, deg_flags, kids = build(mtcnn)
+    crops, labels, deg_flags, kids, (ce_c, ce_l), (yl_c, yl_l, yl_d) = build(mtcnn)
     del mtcnn
     drng = random.Random(8)
     clean_t = [plain(c) for c in crops]
@@ -96,6 +120,16 @@ def main():
         sweep("cross_age", embed(m, clean_t, device), labels)
         sweep("cross_age_degraded", embed(m, mixed_t, device), labels)
         sweep("kids (clean+degraded view each)", embed(m, kid_t, device), kid_labels)
+        sweep("celeba_holdout (adult celebrities)", embed(m, [plain(c) for c in ce_c], device), ce_l)
+        if yl_c:
+            sweep("ylfw_children (held-out child identities)", embed(m, [plain(c) for c in yl_c], device), yl_l)
+            sweep("ylfw_children_degraded", embed(m, [degrade(c, drng) if d else plain(c) for c, d in zip(yl_c, yl_d)], device), yl_l)
+        print("  --- mean over the identity-labelled sets (cross_age, cross_age_degraded, celeba, ylfw, ylfw_degraded) ---")
+        for t, rows in SUMMARY.items():
+            rows = [r for i, r in enumerate(rows) if i in (0, 1, 3, 4, 5)] if len(rows) >= 6 else rows
+            print(f"    thr {t:.2f}  mean precision {np.mean([r[0] for r in rows]):.3f}  "
+                  f"recall {np.mean([r[1] for r in rows]):.3f}  ARI {np.mean([r[2] for r in rows]):.3f}")
+        SUMMARY.clear()
 
 
 if __name__ == "__main__":

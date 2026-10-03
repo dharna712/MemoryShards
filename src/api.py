@@ -22,6 +22,7 @@ import base64
 import io
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 from flask import Flask, jsonify, request
@@ -31,8 +32,10 @@ from PIL import Image
 sys.stdout.reconfigure(encoding="utf-8")
 
 from build_timeline import build_timeline
+import recognize_people as _recognize
 from recognize_people import recognize_people
 
+_models_ready = threading.Event()
 app = Flask(__name__)
 # The page may be served from another origin (or a public https site calling this
 # localhost API), so allow cross-origin and Chrome's private-network preflight.
@@ -75,7 +78,12 @@ def event_to_json(event, photo_to_people):
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok"})
+    return jsonify({
+        "status": "ok",
+        "face_model": _recognize.CHECKPOINT.name,
+        "group_threshold": _recognize.DISTANCE_THRESHOLD,
+        "models_ready": _models_ready.is_set(),
+    })
 
 
 @app.post("/api/timeline")
@@ -116,7 +124,21 @@ def timeline():
         })
 
 
+def _warm_models():
+    # load the face and caption models at startup so the first upload isn't a 60s cold start
+    try:
+        import caption_events
+        if _recognize.CHECKPOINT.exists():
+            _recognize._load_models()
+        caption_events._load_model()
+    except Exception as exc:
+        print(f"[warmup] skipped: {exc}")
+    finally:
+        _models_ready.set()
+
+
 if __name__ == "__main__":
+    threading.Thread(target=_warm_models, daemon=True).start()
     # debug=True's file-watching reloader was falsely detecting changes in
     # torch/stdlib files mid-request on this machine and restarting the
     # server, killing in-flight requests — not needed for local testing,

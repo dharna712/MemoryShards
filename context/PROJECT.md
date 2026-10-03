@@ -38,7 +38,12 @@ identifies dates, locations, people, and activities, and produces something like
    embeddings (DBSCAN/agglomerative, cosine distance) to group "same person"
    across photos — the same trick phone galleries use for People albums.
    This is the part we actually train ourselves, not just a downloaded
-   checkpoint.
+   checkpoint. Current model (v3): the same recipe extended with AgeDB
+   (one person across decades), YLFW (identity-labelled children) and
+   UTKFace children/elderly (self-supervised), with blur / low-res / JPEG /
+   low-light degradation on training pairs; people are grouped by
+   average-linkage clustering at cosine distance 0.45. Numbers and the
+   remaining weak spots are in STATUS.md.
 5. **Captioning** — run each event's photo cluster through a pretrained
    vision-language model (BLIP or CLIP) to generate a short natural-language
    description of what's happening ("at the beach", "eating dinner"). Used
@@ -57,7 +62,9 @@ the evaluation; not fine to screenshot into anything pushed publicly.
 - **Training/dev (timeline logic)**: public geotagged, timestamped photo
   dataset (travel/trip photos with EXIF) — Wikimedia Commons, CC-licensed.
 - **Training (face recognition)**: CelebA (public, licensed, ~200K images,
-  ~10K labeled identities) — trains the face-embedding model.
+  ~10K labeled identities) — trains the face-embedding model; v2/v3 add
+  AgeDB, YLFW and UTKFace (research datasets, training/eval use only, never
+  redistributed, `data/` is gitignored).
 - **Test/demo**: our own personal photos and WhatsApp export, used purely as a
   qualitative held-out demo (no labels needed) — shows the pipeline works on a
   real, personal, multimodal timeline rather than just the training distribution.

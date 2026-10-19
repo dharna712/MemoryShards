@@ -20,6 +20,7 @@ Then POST photos (multipart, field name "photos") to
 
 import base64
 import io
+import os
 import sys
 import tempfile
 import threading
@@ -37,6 +38,7 @@ from recognize_people import recognize_people
 
 _models_ready = threading.Event()
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # reject oversized uploads (cloud hardening)
 # The page may be served from another origin (or a public https site calling this
 # localhost API), so allow cross-origin and Chrome's private-network preflight.
 CORS(app, allow_private_network=True)
@@ -86,17 +88,40 @@ def health():
     })
 
 
+# Load shedding (we have no load balancer on the single small instance): process one heavy
+# upload at a time and cap photos per request, so concurrent users get a clear 503/413 and
+# retry, instead of exhausting the 1 GB of RAM and crashing everyone's request.
+_busy = threading.BoundedSemaphore(1)
+MAX_PHOTOS_PER_REQUEST = int(os.environ.get("MS_MAX_PHOTOS", "40"))
+
+
 @app.post("/api/timeline")
 def timeline():
     files = request.files.getlist("photos")
     if not files:
         return jsonify({"error": "no photos uploaded (expected multipart field 'photos')"}), 400
+    if len(files) > MAX_PHOTOS_PER_REQUEST:
+        return jsonify({"error": f"too many photos in one upload (max {MAX_PHOTOS_PER_REQUEST})"}), 413
+    if not _busy.acquire(blocking=False):
+        resp = jsonify({"error": "The server is busy processing another upload. Please try again in a minute."})
+        resp.status_code = 503
+        resp.headers["Retry-After"] = "30"
+        return resp
+    try:
+        return _timeline_job(files)
+    finally:
+        _busy.release()
 
+
+def _timeline_job(files):
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
         for f in files:
             if f.filename:
-                f.save(tmp_path / f.filename)
+                # never trust the client's filename: keep only the base name, so "../../x" or an absolute path
+                # cannot write outside the temporary directory (path traversal)
+                name = Path(str(f.filename).replace("\\", "/")).name
+                f.save(tmp_path / (name if name not in ("", ".", "..") else "photo"))
 
         online_places = request.form.get("online_places") == "1"
         events, skipped = build_timeline(tmp_path, caption=True, online_places=online_places)
@@ -136,6 +161,9 @@ def _warm_models():
     finally:
         _models_ready.set()
 
+
+if __name__ != "__main__" and __import__("os").environ.get("MS_WARM") == "1":
+    threading.Thread(target=_warm_models, daemon=True).start()  # under gunicorn
 
 if __name__ == "__main__":
     threading.Thread(target=_warm_models, daemon=True).start()

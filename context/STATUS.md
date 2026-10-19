@@ -703,3 +703,8 @@ Re-ran the original 200-pair verification test (`src/evaluate_face_model.py`, un
 `/api/health` now reports `face_model`, `group_threshold` and `models_ready`; `api.py` preloads the face and caption models in a background thread at startup (first upload no longer a ~60s cold start). The desktop launcher prints that status, waits for `models_ready`, and tells you to close the old API window if you changed code since it started (it reuses a healthy API). Verified from a cold start: API up, v3 at 0.45, models ready, tunnel reachable, 10/10 API suite through the tunnel.
 
 `context/REPORT_NOTES.md` is the problems-faced write-up (problem, cause, fix, numbers) for the report.
+
+## Upload endpoint hardening (path traversal fix)
+- `POST /api/timeline` saved each uploaded file under the filename the client sent. A name like `../../x` or an absolute path could write outside the per-request temp folder. Reproduced locally with a harmless marker file.
+- Fix: only the base name of the uploaded file is used (`src/api.py`). Regression test: `src/test_filename_traversal.py` (relative, absolute and backslash names all stay inside the temp folder).
+- Also in this change: a 200 MB request cap, at most 40 photos per upload (413), and one heavy upload at a time (503 with Retry-After when busy), so a small server cannot be exhausted by concurrent uploads.

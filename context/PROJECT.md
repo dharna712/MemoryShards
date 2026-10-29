@@ -44,6 +44,9 @@ identifies dates, locations, people, and activities, and produces something like
    low-light degradation on training pairs; people are grouped by
    average-linkage clustering at cosine distance 0.45. Numbers and the
    remaining weak spots are in STATUS.md.
+   Finding (Oct 2026): a correctly standardised pretrained FaceNet matches v3
+   on adults and across ages; the real gain from fine-tuning is children and
+   one shared grouping threshold (REPORT_NOTES.md, P28).
 5. **Captioning** — run each event's photo cluster through a pretrained
    vision-language model (BLIP or CLIP) to generate a short natural-language
    description of what's happening ("at the beach", "eating dinner"). Used
